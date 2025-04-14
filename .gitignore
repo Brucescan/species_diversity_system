@@ -1,0 +1,34 @@
+# Python 缓存文件
+*.pyc
+__pycache__/
+*.egg-info/
+*.dist-info
+
+# 虚拟环境
+venv/
+.env/
+ENV/
+env/*
+
+# Django 相关
+db.sqlite3  # 开发数据库文件
+/media       # 媒体文件（根据项目实际情况调整）
+/static      # 静态文件（如果需要忽略）
+
+# pip 缓存
+pip-wheel-
+pip-cache-
+
+# IDE 相关
+.idea/
+.vscode/
+*.iml
+
+# 其他
+*.log
+*.sqlite3-journal
+.DS_Store
+Thumbs.db
+
+# 本地配置
+.local.env

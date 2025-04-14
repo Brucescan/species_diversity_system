@@ -1,0 +1,40 @@
+services:
+  # Django后端服务
+  backend:
+    build:
+      context: ./
+      dockerfile: Dockerfile.backend
+    ports:
+      - "8000:8000"  # 映射Django端口（本地8000 -> 容器8000）
+    environment:
+      - POSTGRES_DB=mydb
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=123456
+      - POSTGRES_HOST=database  # 对应数据库服务名
+      - POSTGRES_PORT=5432
+    depends_on:
+      - database  # 确保数据库先启动
+    networks:
+      - app-network
+
+  # PostgreSQL服务
+  database:
+    image: postgres:16
+    container_name: postgres_container
+    ports:
+      - "5432:5432"  # 映射数据库端口（本地5432 -> 容器5432）
+    environment:
+      - POSTGRES_DB=mydb
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=123456
+    volumes:
+      - postgres_data:/var/lib/postgresql/data  # 持久化数据
+    networks:
+      - app-network
+
+volumes:
+  postgres_data: {}  # 定义数据卷
+
+networks:
+  app-network:
+    driver: bridge
