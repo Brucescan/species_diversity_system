@@ -51,11 +51,25 @@ class LoginView(APIView):
     def post(self, request, *args, **kwargs):
         username = request.data.get('username')
         password = request.data.get('password')
+        print(f"Attempting to authenticate user: {username}")  # 调试
+
         user = authenticate(username=username, password=password)
+        print(f"User found: {user}")  # 调试
+        print(f"Is active: {user.is_active if user else 'No user'}")  # 调试
+
         if user is not None:
             token, created = Token.objects.get_or_create(user=user)
-            return Response({'code':201,'token': token.key, 'user_id': user.pk, 'email': user.email})
-        return Response({'error': 'Invalid Credentials'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({
+                'code': 201,
+                'token': token.key,
+                'user_id': user.pk,
+                'email': user.email
+            })
+        return Response(
+            {'error': 'Invalid Credentials'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
 
 @swagger_auto_schema(
     method='post',

@@ -2,12 +2,13 @@
 
 ```git
 复制代码到本地
-git clone https://github.com/Brucescan/urban_flooding_prediction_platform.git #如果http不行就换ssh
+git clone https://github.com/Brucescan/species_diversity_system.git
+#如果https不行就换ssh
 ```
 
 ```
 打开命令行，进入项目根目录
-cd urban_flooding_prediction_platform
+cd species_diversity_system
 ```
 
 ```
