@@ -97,7 +97,6 @@ class FetchBird:
                 "timestamp": str(resp["timestamp"]),
                 "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36"
             }
-            print("运行到这里了")
             data_resp = self.session.post(self.url, headers=self.headers, data=resp["urlParam"])
             if data_resp.json()["code"]==505:
                 print("开始验证")
@@ -120,6 +119,7 @@ class FetchBird:
                     species_details = self.get_species_details(f"page=1&limit=1500&reportId={one_report['reportId']}")
                     one_report["species_details"] = species_details
                     bird_data.append(one_report)
+            print(f"page{i+1}抓取完毕")
         return self.process_bird_data(bird_data)
 
     def get_get_details(self, reportId_data):
