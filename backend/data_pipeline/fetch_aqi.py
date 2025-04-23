@@ -34,7 +34,8 @@ class FetchAQI:
         history_station_data = []
         for station in stations_list:
             history_station_data.append(self.get_station_history(station["StationCode"]))
-        return history_station_data
+            break
+        return self.process_data(history_station_data)
 
     def get_station_history(self, station_code):
         history_params = {
@@ -44,6 +45,29 @@ class FetchAQI:
         history_resp = requests.post("https://air.cnemc.cn:18007/HourChangesPublish/GetAqiHistoryByCondition",
                                      headers=self.headers, params=history_params)
         return history_resp.text
+
+    def process_data(self, all_data):
+        processed_data = []
+        for station in all_data:
+            for one_time in eval(station):
+                one_data = {}
+                one_data["stationName"] = one_time["PositionName"]
+                one_data["timePointStr"] = one_time["TimePointStr"]
+                # one_data["timeStamp"] = one_time["TimePoint"].replace("\\", "").replace("/", "").replace("Date(","").replace(")","")
+                one_data["longitude"] = one_time["Longitude"]
+                one_data["latitude"] = one_time["Latitude"]
+                one_data["measure"] = one_time["Measure"]
+                one_data["quality"] = one_time["Quality"]
+                one_data["description"] = one_time["Unheathful"]
+                one_data["AQI"] = one_time["AQI"]
+                one_data["CO"] = str(one_time["COLevel"]) + "," + str(one_time["CO"]) + "," + str(one_time["CO_24h"])
+                one_data["NO2"] = str(one_time["NO2Level"]) + "," + str(one_time["NO2"]) + "," + str(one_time["NO2_24h"])
+                one_data["O3"] = str(one_time["O3Level"]) + "," + str(one_time["O3_8hLevel"]) + "," + str(one_time["O3"]) + "," + str(one_time["O3_8h"]) + "," + str(one_time["O3_24h"])
+                one_data["PM10"] = str(one_time["PM10Level"]) + "," + str(one_time["PM10"]) + "," + str(one_time["PM10_24h"])
+                one_data["PM2.5"] = str(one_time["PM2_5Level"]) + "," + str(one_time["PM2_5"]) + "," + str(one_time["PM2_5_24h"])
+                one_data["SO2"] = str(one_time["SO2Level"]) + "," + str(one_time["SO2"]) + "," + str(one_time["SO2_24h"])
+                processed_data.append(one_data)
+        return processed_data
 
 
 if __name__ == '__main__':

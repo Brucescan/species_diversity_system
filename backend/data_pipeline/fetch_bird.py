@@ -67,15 +67,14 @@ class FetchBird:
         获取数据的主函数
         :return: 总数据
         """
-        page_count = self.get_page_count()
-        print(page_count)
+        # page_count = self.get_page_count()
+        page_count=1
         # 因为数据量大，所以先写死
         # page_count = 10
         bird_data = []
         for i in range(page_count):
-            print(i)
             jiami_data = {
-                "data": f"page={i + 1}&limit=50&sortBy=startTime&orderBy=desc",
+                "data": f"page={i + 2}&limit=50&sortBy=startTime&orderBy=desc",
             }
             resp = self.js.call("encryptHeaders", jiami_data)
             self.headers = {
@@ -112,10 +111,8 @@ class FetchBird:
                 data_resp = self.session.post(self.url, headers=self.headers, data=resp["urlParam"])
                 print("收到响应",resp)
             data_res = self.js.call("decryptFn", data_resp.json()['data'])
-            # print(data_res)
 
             one_page_list = ast.literal_eval(data_res)
-            # print(one_page_list)
             for one_report in one_page_list:
                 if one_report["address"][:3] == "北京市":
                     time.sleep(random.randint(1,3))
@@ -126,11 +123,9 @@ class FetchBird:
                     species_details = self.get_species_details(f"page=1&limit=1500&reportId={one_report['reportId']}")
                     one_report["species_details"] = species_details
                     bird_data.append(one_report)
-                    # print(one_report)
-            # bird_data.append(data_res)
             time.sleep(random.randint(1, 5))
             # break
-        return bird_data
+        return self.process_bird_data(bird_data)
 
     def get_get_details(self, reportId_data):
         """
@@ -180,7 +175,7 @@ class FetchBird:
     def get_species_details(self, params):
         details = {}
         params_resp = self.js.call("encryptHeaders", {"data": params})
-        url = "https://api.birdreport.cn/front/activity/get"
+        url = "https://api.birdreport.cn/front/activity/taxon"
         headers = {
             "accept": "application/json, text/javascript, */*; q=0.01",
             # "accept-encoding": "gzip, deflate, br, zstd",
@@ -282,6 +277,22 @@ class FetchBird:
         return False
 
         # print(res.text)
+
+    def process_bird_data(self,bird_data):
+        processed_data = []
+        for bird in bird_data:
+            one_report = {}
+            one_report["address"] = bird["address"]
+            one_report["startTime"] = bird["startTime"]
+            one_report["endTime"] = bird["endTime"]
+            one_report["taxonCount"] = bird["taxonCount"]
+            one_report["serialId"] = bird["serialId"]
+            one_report["longitude"] = eval(bird["get_details"]["details"])["location"].split(",")[0]
+            one_report["latitude"] = eval(bird["get_details"]["details"])["location"].split(",")[1]
+            one_report["species"] = eval(bird["species_details"]["details"])
+            processed_data.append(one_report)
+
+        return processed_data
 
 
 if __name__ == '__main__':
