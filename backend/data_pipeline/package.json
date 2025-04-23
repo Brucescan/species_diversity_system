@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "crypto": "^1.0.1",
+    "crypto-js": "^4.2.0",
+    "get-random-values": "^3.0.0",
+    "node-encrypt-js": "^1.0.4"
+  }
+}

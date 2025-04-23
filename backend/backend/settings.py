@@ -16,6 +16,7 @@ INSTALLED_APPS = [
     'corsheaders',  # 添加此行以启用 CORS 中间件
     'rest_framework',
     'drf_yasg',
+    'data_pipeline',
 ]
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'your_domain.com']  # 根据实际情况添加域名或IP地址
@@ -58,26 +59,26 @@ REST_FRAMEWORK = {
     ],
 }
 
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-        },
-    },
-    'loggers': {
-        'django': {
-            'handlers': ['console'],
-            'level': 'DEBUG',
-        },
-        'user_api': {
-            'handlers': ['console'],
-            'level': 'DEBUG',
-            'propagate': False,
-        },
-    },
-}
+# LOGGING = {
+#     'version': 1,
+#     'disable_existing_loggers': False,
+#     'handlers': {
+#         'console': {
+#             'class': 'logging.StreamHandler',
+#         },
+#     },
+#     'loggers': {
+#         'django': {
+#             'handlers': ['console'],
+#             'level': 'DEBUG',
+#         },
+#         'user_api': {
+#             'handlers': ['console'],
+#             'level': 'DEBUG',
+#             'propagate': False,
+#         },
+#     },
+# }
 # docker数据库配置
 # DATABASES = {
 #     'default': {
