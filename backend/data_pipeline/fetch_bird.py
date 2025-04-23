@@ -68,13 +68,12 @@ class FetchBird:
         :return: 总数据
         """
         # page_count = self.get_page_count()
-        page_count=1
         # 因为数据量大，所以先写死
-        # page_count = 10
+        page_count = 10
         bird_data = []
         for i in range(page_count):
             jiami_data = {
-                "data": f"page={i + 2}&limit=50&sortBy=startTime&orderBy=desc",
+                "data": f"page={i + 1}&limit=50&sortBy=startTime&orderBy=desc",
             }
             resp = self.js.call("encryptHeaders", jiami_data)
             self.headers = {
@@ -100,7 +99,6 @@ class FetchBird:
             }
             print("运行到这里了")
             data_resp = self.session.post(self.url, headers=self.headers, data=resp["urlParam"])
-            # print(data_resp.json())
             if data_resp.json()["code"]==505:
                 print("开始验证")
                 while True:
@@ -115,7 +113,6 @@ class FetchBird:
             one_page_list = ast.literal_eval(data_res)
             for one_report in one_page_list:
                 if one_report["address"][:3] == "北京市":
-                    time.sleep(random.randint(1,3))
                     # 判断是否是北京市
                     print(one_report["address"])
                     get_details = self.get_get_details("reportId=" + one_report["reportId"])
@@ -123,8 +120,6 @@ class FetchBird:
                     species_details = self.get_species_details(f"page=1&limit=1500&reportId={one_report['reportId']}")
                     one_report["species_details"] = species_details
                     bird_data.append(one_report)
-            time.sleep(random.randint(1, 5))
-            # break
         return self.process_bird_data(bird_data)
 
     def get_get_details(self, reportId_data):
@@ -237,13 +232,11 @@ class FetchBird:
         resp = session.get(url, headers=headers, params={
             "timestamp": str(time.time_ns()),
         })
-        # print(resp.content)
         docr = DdddOcr(show_ad=False)
         try:
             verify_code = docr.classification(resp.content)
         except:
             return False
-        print(verify_code)
 
         verify_url = "https://api.birdreport.cn/front/code/visited/verify"
         verify_headers = {
@@ -270,13 +263,9 @@ class FetchBird:
             "code": str(verify_code),
         })
         print("返回的sucess==========",res.json()['success'])
-        print(type(res.json()["success"]))
-        print(res.json()['success']==True)
         if res.json()["success"]:
             return True
         return False
-
-        # print(res.text)
 
     def process_bird_data(self,bird_data):
         processed_data = []
@@ -302,5 +291,3 @@ if __name__ == '__main__':
         "data": fetch.get_all_data()
     }
     print(all_data)
-    # print(all_data)
-    # fetch.process_verify()

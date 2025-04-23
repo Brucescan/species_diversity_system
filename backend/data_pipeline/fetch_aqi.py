@@ -3,6 +3,7 @@
 @auther brucescan
 """
 import requests
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
 class FetchAQI:
@@ -32,9 +33,14 @@ class FetchAQI:
         resp = requests.get(self.url, headers=self.headers, params=params)
         stations_list = resp.json()
         history_station_data = []
-        for station in stations_list:
-            history_station_data.append(self.get_station_history(station["StationCode"]))
-            break
+        with ThreadPoolExecutor(max_workers=5) as executor:
+            futures = [executor.submit(self.get_station_history,station["StationCode"]) for station in stations_list]
+            for future in as_completed(futures):
+                try:
+                    result = future.result()
+                    history_station_data.append(result)
+                except Exception as e:
+                    print(f"An error occurred: {e}")
         return self.process_data(history_station_data)
 
     def get_station_history(self, station_code):
