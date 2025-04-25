@@ -26,7 +26,7 @@ class FetchAQI:
             "x-requested-with": "XMLHttpRequest"
         }
 
-    def get_data(self):
+    def get_data(self,queue):
         params = {
             "cityName": "北京市",
         }
@@ -41,7 +41,7 @@ class FetchAQI:
                     history_station_data.append(result)
                 except Exception as e:
                     print(f"An error occurred: {e}")
-        return self.process_data(history_station_data)
+        return self.process_data(history_station_data,queue)
 
     def get_station_history(self, station_code):
         history_params = {
@@ -52,14 +52,14 @@ class FetchAQI:
                                      headers=self.headers, params=history_params)
         return history_resp.text
 
-    def process_data(self, all_data):
-        processed_data = []
+    def process_data(self, all_data,queue):
+        # processed_data = []
         for station in all_data:
             for one_time in eval(station):
                 one_data = {}
                 one_data["stationName"] = one_time["PositionName"]
                 one_data["timePointStr"] = one_time["TimePointStr"]
-                # one_data["timeStamp"] = one_time["TimePoint"].replace("\\", "").replace("/", "").replace("Date(","").replace(")","")
+                one_data["timeStamp"] = one_time["TimePoint"].replace("\\", "").replace("/", "").replace("Date(","").replace(")","")
                 one_data["longitude"] = one_time["Longitude"]
                 one_data["latitude"] = one_time["Latitude"]
                 one_data["measure"] = one_time["Measure"]
@@ -72,11 +72,16 @@ class FetchAQI:
                 one_data["PM10"] = str(one_time["PM10Level"]) + "," + str(one_time["PM10"]) + "," + str(one_time["PM10_24h"])
                 one_data["PM2.5"] = str(one_time["PM2_5Level"]) + "," + str(one_time["PM2_5"]) + "," + str(one_time["PM2_5_24h"])
                 one_data["SO2"] = str(one_time["SO2Level"]) + "," + str(one_time["SO2"]) + "," + str(one_time["SO2_24h"])
-                processed_data.append(one_data)
-        return processed_data
+                print(f"{one_data['timePointStr']}抓取完毕")
+                queue.put({
+                    "type":"AQI",
+                    "data":one_data
+                })
+        queue.put("空气质量数据抓取完毕")
+        # return processed_data
 
 
-if __name__ == '__main__':
-    fetch = FetchAQI()
-    data = fetch.get_data()
-    print(data)
+# if __name__ == '__main__':
+#     fetch = FetchAQI()
+#     data = fetch.get_data()
+#     print(data)

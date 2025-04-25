@@ -62,14 +62,14 @@ class FetchBird:
         return int(int(data_resp.json()["count"])/50)+1
 
 
-    def get_all_data(self):
+    def get_all_data(self,queue):
         """
         获取数据的主函数
         :return: 总数据
         """
         # page_count = self.get_page_count()
         # 因为数据量大，所以先写死
-        page_count = 10
+        page_count = 3
         bird_data = []
         for i in range(page_count):
             jiami_data = {
@@ -113,14 +113,13 @@ class FetchBird:
             for one_report in one_page_list:
                 if one_report["address"][:3] == "北京市":
                     # 判断是否是北京市
-                    print(one_report["address"])
                     get_details = self.get_get_details("reportId=" + one_report["reportId"])
                     one_report["get_details"] = get_details
                     species_details = self.get_species_details(f"page=1&limit=1500&reportId={one_report['reportId']}")
                     one_report["species_details"] = species_details
                     bird_data.append(one_report)
             print(f"page{i+1}抓取完毕")
-        return self.process_bird_data(bird_data)
+        return self.process_bird_data(bird_data,queue)
 
     def get_get_details(self, reportId_data):
         """
@@ -267,8 +266,8 @@ class FetchBird:
             return True
         return False
 
-    def process_bird_data(self,bird_data):
-        processed_data = []
+    def process_bird_data(self,bird_data,queue):
+        # processed_data = []
         for bird in bird_data:
             one_report = {}
             one_report["address"] = bird["address"]
@@ -279,15 +278,16 @@ class FetchBird:
             one_report["longitude"] = eval(bird["get_details"]["details"])["location"].split(",")[0]
             one_report["latitude"] = eval(bird["get_details"]["details"])["location"].split(",")[1]
             one_report["species"] = eval(bird["species_details"]["details"])
-            processed_data.append(one_report)
+            # processed_data.append(one_report)
+            queue.put({"type":"bird","data":one_report})
+        queue.put("鸟类数据抓取完毕")
+        return None
 
-        return processed_data
 
-
-if __name__ == '__main__':
-    fetch = FetchBird()
-    all_data = {
-        "type": "bird",
-        "data": fetch.get_all_data()
-    }
-    print(all_data)
+# if __name__ == '__main__':
+#     fetch = FetchBird()
+#     all_data = {
+#         "type": "bird",
+#         "data": fetch.get_all_data()
+#     }
+#     print(all_data)

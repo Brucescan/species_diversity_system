@@ -17,6 +17,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'drf_yasg',
     'data_pipeline',
+    'django.contrib.gis',
 ]
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'your_domain.com']  # 根据实际情况添加域名或IP地址
@@ -99,7 +100,7 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'static_collected')
 # 本地开发数据配置
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
+        'ENGINE': 'django.contrib.gis.db.backends.postgis',
         'NAME': 'mydb',     # 数据库名称
         'USER': 'postgres',      # 数据库用户名（默认可能是 postgres）
         'PASSWORD': '123456', # 用户密码
@@ -108,10 +109,10 @@ DATABASES = {
     }
 }
 
+GDAL_LIBRARY_PATH = r'E:\anaconda3\envs\backend\Library\bin\gdal.dll'  # 替换为实际路径
+GEOS_LIBRARY_PATH = r'E:\anaconda3\envs\backend\Library\bin\geos_c.dll'
+
 # 添加 CORS 配置
 CORS_ORIGIN_ALLOW_ALL = True
 CORS_ALLOW_CREDENTIALS = True
-# CORS_ALLOWED_ORIGINS = [
-#     "http://localhost:3000",  # 根据实际情况添加前端应用的域名或IP地址
-#     "http://127.0.0.1:3000",
-# ]
+
