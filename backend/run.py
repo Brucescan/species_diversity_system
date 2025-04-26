@@ -1,6 +1,7 @@
 import subprocess
 import sys
 import time
+import multiprocessing
 
 
 def run_command(command, cwd=None):
@@ -11,7 +12,8 @@ def run_command(command, cwd=None):
         shell=True,
         cwd=cwd,
         stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        encoding='utf-8',  # 强制使用 UTF-8 编码
+        stderr=subprocess.STDOUT,  # 将 stderr 合并到 stdout
         universal_newlines=True,
     )
 
@@ -30,12 +32,26 @@ def run_command(command, cwd=None):
         sys.exit(return_code)
 
 
-if __name__ == "__main__":
-    # 第一个命令：运行 pipeline
-    # run_command("python manage.py run_pipeline")
+def run_pipeline():
+    """运行pipeline命令"""
+    run_command("python data_pipeline/run_pipeline.py")
 
-    # 等待一下确保 pipeline 完成
-    time.sleep(1)
 
-    # 第二个命令：启动开发服务器
+def run_server():
+    """运行开发服务器"""
     run_command("python manage.py runserver")
+
+
+if __name__ == "__main__":
+    # 使用多进程分别运行pipeline和server
+    pipeline_process = multiprocessing.Process(target=run_pipeline)
+    server_process = multiprocessing.Process(target=run_server)
+
+    # 启动进程
+    pipeline_process.start()
+    time.sleep(5)  # 给pipeline一些初始化时间
+    server_process.start()
+
+    # 等待进程结束(正常情况下server_process不会结束)
+    pipeline_process.join()
+    server_process.join()

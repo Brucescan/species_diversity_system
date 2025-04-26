@@ -24,7 +24,7 @@ def consumer(queue):
 
     while True:
         resp = queue.get()
-        print(f"收到数据: {resp}")
+        # print(f"收到数据: {resp}")
 
         # 检查结束信号
         if resp in ["空气质量数据抓取完毕", "鸟类数据抓取完毕"]:

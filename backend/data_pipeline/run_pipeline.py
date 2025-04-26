@@ -1,4 +1,8 @@
 from multiprocessing import Process, Queue
+import os
+# 强制设置工作目录为 data_pipeline/
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
+
 from fetch_aqi import FetchAQI
 from fetch_bird import FetchBird
 from save_to_database import consumer
