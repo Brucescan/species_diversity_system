@@ -61,7 +61,6 @@ class FetchBird:
             print("收到响应",data_resp.json())
         return int(int(data_resp.json()["count"])/50)+1
 
-
     def get_all_data(self,queue):
         """
         获取数据的主函数
@@ -282,12 +281,3 @@ class FetchBird:
             queue.put({"type":"bird","data":one_report})
         queue.put("鸟类数据抓取完毕")
         return None
-
-
-# if __name__ == '__main__':
-#     fetch = FetchBird()
-#     all_data = {
-#         "type": "bird",
-#         "data": fetch.get_all_data()
-#     }
-#     print(all_data)

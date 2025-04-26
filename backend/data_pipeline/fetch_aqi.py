@@ -33,7 +33,7 @@ class FetchAQI:
         resp = requests.get(self.url, headers=self.headers, params=params)
         stations_list = resp.json()
         history_station_data = []
-        with ThreadPoolExecutor(max_workers=5) as executor:
+        with ThreadPoolExecutor(max_workers=3) as executor:
             futures = [executor.submit(self.get_station_history,station["StationCode"]) for station in stations_list]
             for future in as_completed(futures):
                 try:
@@ -78,10 +78,3 @@ class FetchAQI:
                     "data":one_data
                 })
         queue.put("空气质量数据抓取完毕")
-        # return processed_data
-
-
-# if __name__ == '__main__':
-#     fetch = FetchAQI()
-#     data = fetch.get_data()
-#     print(data)
