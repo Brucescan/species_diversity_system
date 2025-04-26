@@ -18,6 +18,8 @@ INSTALLED_APPS = [
     'drf_yasg',
     'data_pipeline',
     'django.contrib.gis',
+    'aqi_api',
+    'bird_api',
 ]
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'your_domain.com']  # 根据实际情况添加域名或IP地址

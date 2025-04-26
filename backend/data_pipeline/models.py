@@ -1,6 +1,5 @@
 from django.db import models
 from django.contrib.gis.db import models as gis_models
-# from django.contrib.postgres.fields import JSONField  # 如果使用PostgreSQL
 from django.db.models import JSONField
 class BirdObservation(models.Model):
     """
@@ -10,7 +9,7 @@ class BirdObservation(models.Model):
     start_time = models.DateTimeField(verbose_name="开始时间")
     end_time = models.DateTimeField(verbose_name="结束时间")
     taxon_count = models.IntegerField(verbose_name="物种总数")
-    serial_id = models.CharField(max_length=50, unique=True, verbose_name="记录编号")
+    serial_id = models.CharField(max_length=50, unique=False, verbose_name="记录编号")
 
     # 空间字段（使用GeoDjango）
     location = gis_models.PointField(geography=True, verbose_name="坐标点")
@@ -95,6 +94,9 @@ class AQIRecord(models.Model):
     timestamp = models.DateTimeField(verbose_name="记录时间")
     aqi = models.FloatField(null=True, blank=True, verbose_name="AQI指数")
     quality = models.CharField(max_length=50, null=True, blank=True, verbose_name="空气质量等级")
+    description = models.CharField(max_length=50,null=True,verbose_name="健康指引")
+    measure = models.CharField(max_length=50,null=True,verbose_name="描述")
+    timestr = models.CharField(max_length=20,null=True,verbose_name="时间描述")
 
     # 污染物浓度
     co = models.CharField(null=True, blank=True, verbose_name="CO(mg/m³)")
