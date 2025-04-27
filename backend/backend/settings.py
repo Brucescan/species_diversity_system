@@ -114,6 +114,9 @@ DATABASES = {
 GDAL_LIBRARY_PATH = r'E:\anaconda3\envs\backend\Library\bin\gdal.dll'  # 替换为实际路径
 GEOS_LIBRARY_PATH = r'E:\anaconda3\envs\backend\Library\bin\geos_c.dll'
 
+USE_TZ = True
+TIME_ZONE = 'Asia/Shanghai'  # 根据你的需求设置
+
 # 添加 CORS 配置
 CORS_ORIGIN_ALLOW_ALL = True
 CORS_ALLOW_CREDENTIALS = True
