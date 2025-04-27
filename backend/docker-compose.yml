@@ -3,37 +3,41 @@ services:
   backend:
     build:
       context: ./
-      dockerfile: Dockerfile.backend
+      dockerfile: Dockerfile
     ports:
-      - "8000:8000"  # 映射Django端口（本地8000 -> 容器8000）
+      - "8000:8000"
     environment:
       - POSTGRES_DB=mydb
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=123456
-      - POSTGRES_HOST=database  # 对应数据库服务名
+      - POSTGRES_HOST=database
       - POSTGRES_PORT=5432
+      - GDAL_LIBRARY_PATH=/usr/lib/libgdal.so
+      - GEOS_LIBRARY_PATH=/usr/lib/libgeos_c.so
     depends_on:
-      - database  # 确保数据库先启动
+      - database
     networks:
       - app-network
 
-  # PostgreSQL服务
+  # PostgreSQL服务（带PostGIS扩展）
   database:
-    image: postgres:16
+    image: postgis/postgis:16-3.4
     container_name: postgres_container
     ports:
-      - "5432:5432"  # 映射数据库端口（本地5432 -> 容器5432）
+      - "5432:5432"
     environment:
       - POSTGRES_DB=mydb
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=123456
+      - LC_COLLATE=C  # 强制使用C排序规则避免版本问题
+      - LC_CTYPE=C
     volumes:
-      - postgres_data:/var/lib/postgresql/data  # 持久化数据
+      - postgres_data:/var/lib/postgresql/data
     networks:
       - app-network
 
 volumes:
-  postgres_data: {}  # 定义数据卷
+  postgres_data: {}
 
 networks:
   app-network:
