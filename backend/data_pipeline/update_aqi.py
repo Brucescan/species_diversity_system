@@ -14,7 +14,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.settings')
 django.setup()
 from data_pipeline.models import AQIStation, AQIRecord
 
-class FetchAQI:
+class UpDateAQI:
     def __init__(self):
         self.url = "https://air.cnemc.cn:18007/CityData/GetAQIDataPublishLive"
         self.headers = {
@@ -198,18 +198,18 @@ class FetchAQI:
     def _clean_old_data(self):
         """清理超过30天的旧数据"""
         try:
-            thirty_days_ago = timezone.now() - timedelta(days=30)
+            thirty_days_ago = timezone.now() - timedelta(days=365)
             deleted_count, _ = AQIRecord.objects.filter(
                 timestamp__lt=thirty_days_ago
             ).delete()
-            print(f"已删除{deleted_count}条超过30天的旧数据")
+            print(f"已删除{deleted_count}条超过一年的旧数据")
         except Exception as e:
             print(f"清理旧数据失败: {e}")
 
 
 
 if __name__ == '__main__':
-    fetch = FetchAQI()
+    fetch = UpDateAQI()
     fetch.update_database()
 
 
