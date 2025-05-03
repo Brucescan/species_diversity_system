@@ -41,18 +41,18 @@ def consumer(queue):
         data_type = resp["type"]
         data = resp["data"]
 
-        try:
-            if data_type == "bird":
-                process_bird_data(data, buffers)
-            elif data_type == "AQI":
-                process_aqi_data(data, buffers, station_cache)
+        # try:
+        if data_type == "bird":
+            process_bird_data(data, buffers)
+        elif data_type == "AQI":
+            process_aqi_data(data, buffers, station_cache)
 
-            # 检查批量插入
-            check_batch_insert(buffers, BATCH_SIZE, station_cache)
+        # 检查批量插入
+        check_batch_insert(buffers, BATCH_SIZE, station_cache)
 
-        except Exception as e:
-            print(f"处理{data_type}数据时出错: {e}")
-            continue
+        # except Exception as e:
+        #     print(f"处理{data_type}数据时出错: {e}")
+        #     continue
 
     print("消费者进程正常结束")
 
@@ -130,7 +130,7 @@ def process_aqi_data(raw_data, buffers, station_cache):
     aqi_record = AQIRecord(
         station=station,
         timestamp=timestamp,
-        aqi=0 if raw_data['AQI']=="-" else float(raw_data['AQI']),
+        aqi = 0 if raw_data['AQI'] in ("-", "—", "", None) else float(raw_data['AQI']),
         timestr=raw_data["timePointStr"],
         description=raw_data["description"],
         measure=raw_data["measure"],
