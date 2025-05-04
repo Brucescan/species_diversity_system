@@ -15,7 +15,8 @@ services:
       - GDAL_LIBRARY_PATH=/usr/lib/libgdal.so
       - GEOS_LIBRARY_PATH=/usr/lib/libgeos_c.so
     depends_on:
-      - database
+      database:
+        condition: service_healthy
     networks:
       - app-network
 
@@ -29,12 +30,17 @@ services:
       - POSTGRES_DB=mydb
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=123456
-      - LC_COLLATE=C  # 强制使用C排序规则避免版本问题
-      - LC_CTYPE=C
+#      - LC_COLLATE=C  # 强制使用C排序规则避免版本问题
+#      - LC_CTYPE=C
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - app-network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d mydb" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
 volumes:
   postgres_data: {}
