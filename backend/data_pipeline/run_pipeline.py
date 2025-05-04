@@ -81,7 +81,8 @@ if __name__ == '__main__':
         print(f"- {job}")
 
     # Run the scheduler loop
-    print("Scheduler running. Waiting for scheduled jobs...")
+    print("Phase 2: 周期运行中. 等待调度工作...")
+    print("-" * 30)
     while True:
         schedule.run_pending()
         time.sleep(60)  # Check every 60 seconds if a job is due
