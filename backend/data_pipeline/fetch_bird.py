@@ -68,6 +68,7 @@ class FetchBird:
         """
         # page_count = self.get_page_count()
         # 因为数据量大，所以先写死
+        print('你真的运行鸟类了吗')
         page_count = 3
         bird_data = []
         for i in range(page_count):

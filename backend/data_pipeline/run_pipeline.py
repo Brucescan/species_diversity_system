@@ -60,6 +60,8 @@ if __name__ == '__main__':
     c = Process(target=consumer, args=(q,))
     c.start()
     # 等待所有的进程完成
+    print(f'进程状态 - AQI: {p1.is_alive()}, 鸟类: {p2.is_alive()}, 消费者: {c.is_alive()}')
+    print('运行到这里了吗？？？？？？？？？？？')
     p1.join()
     print("AQI fetch process joined.")
     p2.join()

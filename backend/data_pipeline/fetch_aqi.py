@@ -27,6 +27,7 @@ class FetchAQI:
         }
 
     def get_data(self,queue):
+        print('你真的运行aqi了吗')
         params = {
             "cityName": "北京市",
         }
@@ -72,7 +73,6 @@ class FetchAQI:
                 one_data["PM10"] = str(one_time["PM10Level"]) + "," + str(one_time["PM10"]) + "," + str(one_time["PM10_24h"])
                 one_data["PM2.5"] = str(one_time["PM2_5Level"]) + "," + str(one_time["PM2_5"]) + "," + str(one_time["PM2_5_24h"])
                 one_data["SO2"] = str(one_time["SO2Level"]) + "," + str(one_time["SO2"]) + "," + str(one_time["SO2_24h"])
-                print(f"{one_data['timePointStr']}抓取完毕")
                 queue.put({
                     "type":"AQI",
                     "data":one_data

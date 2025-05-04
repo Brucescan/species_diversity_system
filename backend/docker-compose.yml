@@ -29,8 +29,6 @@ services:
       - POSTGRES_DB=mydb
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=123456
-      - LC_COLLATE=C  # 强制使用C排序规则避免版本问题
-      - LC_CTYPE=C
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:

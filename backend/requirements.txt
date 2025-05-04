@@ -6,3 +6,4 @@ drf-yasg==1.21.7
 requests
 ddddocr
 pyexecjs2
+schedule
