@@ -27,7 +27,6 @@ class FetchAQI:
         }
 
     def get_data(self,queue):
-        print('你真的运行aqi了吗')
         params = {
             "cityName": "北京市",
         }

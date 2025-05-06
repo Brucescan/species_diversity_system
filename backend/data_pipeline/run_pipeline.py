@@ -46,22 +46,23 @@ def run_update_script(script_name):
 
 
 if __name__ == '__main__':
+    print("数据管道启动")
     q = Queue()
     fetch_aqi = FetchAQI()
     fetch_bird = FetchBird()
     p1 = Process(target=fetch_aqi.get_data, args=(q,))
     p2 = Process(target=fetch_bird.get_all_data, args=(q,))
     # 启动第一个生产者进程
+    print("生产者aqi启动")
     p1.start()
     # 启动第二个生产者进程
+    print("生产者bird启动")
     p2.start()
 
     # 启动消费者
     c = Process(target=consumer, args=(q,))
     c.start()
     # 等待所有的进程完成
-    print(f'进程状态 - AQI: {p1.is_alive()}, 鸟类: {p2.is_alive()}, 消费者: {c.is_alive()}')
-    print('运行到这里了吗？？？？？？？？？？？')
     p1.join()
     print("AQI fetch process joined.")
     p2.join()

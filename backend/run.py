@@ -34,24 +34,24 @@ def run_command(command, cwd=None):
 
 def run_pipeline():
     """运行pipeline命令"""
-    run_command("python data_pipeline/run_pipeline.py")
+    try:
+        run_command("python data_pipeline/run_pipeline.py")
+    except Exception as e:
+        print(f"run_pipeline 出错: {e}", flush=True)  # 捕获所有异常
 
 
 def run_server():
     """运行开发服务器"""
     run_command("python manage.py runserver")
 
-
 if __name__ == "__main__":
-    # 使用多进程分别运行pipeline和server
     pipeline_process = multiprocessing.Process(target=run_pipeline)
     server_process = multiprocessing.Process(target=run_server)
 
-    # 启动进程
     pipeline_process.start()
-    time.sleep(5)  # 给pipeline一些初始化时间
+
+    time.sleep(5)
     server_process.start()
 
-    # 等待进程结束(正常情况下server_process不会结束)
     pipeline_process.join()
     server_process.join()

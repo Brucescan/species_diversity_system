@@ -15,14 +15,25 @@ services:
       - GDAL_LIBRARY_PATH=/usr/lib/libgdal.so
       - GEOS_LIBRARY_PATH=/usr/lib/libgeos_c.so
     depends_on:
-      - database
+      database:
+        condition: service_healthy
     networks:
       - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/api/aqi/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
   # PostgreSQL服务（带PostGIS扩展）
   database:
     image: postgis/postgis:16-3.4
     container_name: postgres_container
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d mydb" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
     ports:
       - "5432:5432"
     environment:
