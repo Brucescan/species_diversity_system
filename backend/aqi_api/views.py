@@ -1,3 +1,7 @@
+# aqi_api/views.py
+import sys
+
+from django.http import JsonResponse
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from data_pipeline.models import AQIStation, AQIRecord
@@ -15,8 +19,22 @@ class GetStationListView(APIView):
     """
     # authentication_classes = [TokenAuthentication]
     permission_classes = [AllowAny]
-    def get(self, request):
+    def get(self, request, *args, **kwargs):
+        # print(f"--- VIEW GetStationListView CALLED FOR {request.path} ---", file=sys.stderr)
+        # sys.stderr.flush()
+        # try:
+        #     # 1 / 0 # 故意引发一个错误
+        #     return JsonResponse({"message": "Simplified response from GetStationListView"})
+        # except Exception as e:
+        #     print(f"--- EXCEPTION IN GetStationListView: {e} ---", file=sys.stderr)
+        #     # 打印完整的堆栈跟踪到 stderr
+        #     import traceback
+        #     traceback.print_exc(file=sys.stderr)
+        #     sys.stderr.flush()
+        #     # 仍然尝试返回一个响应
+        #     return JsonResponse({"error": "Something went wrong in view"}, status=500)
         # 获取每个监测站最新的记录ID
+        print("真的发送get请求了吗")
         latest_records = AQIRecord.objects.filter(
             station=OuterRef('pk')
         ).order_by('-timestamp').values('id')[:1]
@@ -57,5 +75,5 @@ class GetStationListView(APIView):
                 }
             }
             response_data.append(station_data)
-
+        print('运行到这里了吗')
         return Response({"code": 201, "data": response_data})

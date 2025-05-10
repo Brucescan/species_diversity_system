@@ -11,6 +11,7 @@ RUN apt-get update && apt-get install -y \
     binutils \
     gdal-bin \
     libgdal-dev \
+    libgeos-dev \
     wget \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
@@ -41,4 +42,4 @@ EXPOSE 8000
 
 # 启动命令
 ENTRYPOINT ["sh", "-c"]
-CMD ["python manage.py migrate && python run.py"]
+CMD ["python manage.py migrate && python manage.py runserver 0.0.0.0:8000"]

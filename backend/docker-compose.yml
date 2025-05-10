@@ -19,11 +19,11 @@ services:
         condition: service_healthy
     networks:
       - app-network
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8000/api/aqi/ || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
+#    healthcheck:
+#      test: ["CMD-SHELL", "curl -f http://localhost:8000/api/aqi/station_lastest_list/ || exit 1"]
+#      interval: 10s
+#      timeout: 5s
+#      retries: 3
 
   # PostgreSQL服务（带PostGIS扩展）
   database:

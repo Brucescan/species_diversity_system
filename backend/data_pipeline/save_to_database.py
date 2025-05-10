@@ -7,8 +7,8 @@ from django.contrib.gis.geos import Point
 from datetime import datetime
 
 # 将项目根目录添加到Python路径
-# BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-# sys.path.append(BASE_DIR)
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(BASE_DIR)
 # 设置 Django 环境变量
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.settings')
 django.setup()

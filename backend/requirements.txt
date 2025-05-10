@@ -1,0 +1,9 @@
+django
+djangorestframework
+drf-yasg
+requests~=2.32.3
+ddddocr~=1.5.6
+schedule~=1.2.2
+django-cors-headers
+pyexecjs2
+psycopg2
