@@ -1,9 +1,9 @@
 # aqi_api/views.py
-import sys
-
-from django.http import JsonResponse
+from datetime import timedelta
+from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from aqi_api.serializers import AQIRecordSerializer
 from data_pipeline.models import AQIStation, AQIRecord
 from django.db.models import Subquery, OuterRef
 from rest_framework.authentication import TokenAuthentication
@@ -20,21 +20,6 @@ class GetStationListView(APIView):
     # authentication_classes = [TokenAuthentication]
     permission_classes = [AllowAny]
     def get(self, request, *args, **kwargs):
-        # print(f"--- VIEW GetStationListView CALLED FOR {request.path} ---", file=sys.stderr)
-        # sys.stderr.flush()
-        # try:
-        #     # 1 / 0 # 故意引发一个错误
-        #     return JsonResponse({"message": "Simplified response from GetStationListView"})
-        # except Exception as e:
-        #     print(f"--- EXCEPTION IN GetStationListView: {e} ---", file=sys.stderr)
-        #     # 打印完整的堆栈跟踪到 stderr
-        #     import traceback
-        #     traceback.print_exc(file=sys.stderr)
-        #     sys.stderr.flush()
-        #     # 仍然尝试返回一个响应
-        #     return JsonResponse({"error": "Something went wrong in view"}, status=500)
-        # 获取每个监测站最新的记录ID
-        print("真的发送get请求了吗")
         latest_records = AQIRecord.objects.filter(
             station=OuterRef('pk')
         ).order_by('-timestamp').values('id')[:1]
@@ -75,5 +60,49 @@ class GetStationListView(APIView):
                 }
             }
             response_data.append(station_data)
-        print('运行到这里了吗')
+        response_data.sort(key=lambda item: item['aqi_data']['aqi'], reverse=False)
         return Response({"code": 201, "data": response_data})
+
+class StationHourlyDataAPIView(APIView):
+    """
+    获取指定监测站最新数据点往前24小时内的数据 (DRF版本)
+    """
+    permission_classes = [AllowAny]
+    def get(self, request, station_id, format=None):
+        try:
+            station = AQIStation.objects.get(pk=station_id)
+        except AQIStation.DoesNotExist:
+            return Response(
+                {'code': 404, 'error': '监测站未找到'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # 1. 找到该站点的最新一条记录
+        latest_record = AQIRecord.objects.filter(station=station).order_by('-timestamp').first()
+
+        if not latest_record:
+            # 如果该站点没有任何记录
+            return Response(
+                {'code': 201, 'data': []},
+                status=status.HTTP_200_OK # 通常用200表示成功获取，即使数据为空
+                                           # 如果坚持用201，也可以，但语义上201更偏向“创建成功”
+            )
+
+        # 2. 以最新记录的时间为基准，计算24小时前的时间点
+        latest_timestamp = latest_record.timestamp
+        start_time = latest_timestamp - timedelta(hours=24)
+
+        # 3. 查询这个时间窗口内的数据
+        records_queryset = AQIRecord.objects.filter(
+            station=station,
+            timestamp__gte=start_time,
+            timestamp__lte=latest_timestamp
+        ).order_by('-timestamp')
+
+        # 4. 使用序列化器处理数据
+        serializer = AQIRecordSerializer(records_queryset, many=True)
+
+        return Response(
+            {'code': 201, 'data': serializer.data},
+            status=status.HTTP_200_OK # 同上，一般用200 OK
+        )

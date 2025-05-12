@@ -114,31 +114,31 @@ REST_FRAMEWORK = {
 #         }
 #     },
 # }
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-        },
-    },
-    'loggers': {
-        'django': {
-            'handlers': ['console'],
-            'level': 'DEBUG',
-        },
-        'django.server': { # 添加这个
-            'handlers': ['console'],
-            'level': 'DEBUG', # 或者 INFO
-            'propagate': False, # 通常 runserver 的日志不希望向上传播
-        },
-        'user_api': {
-            'handlers': ['console'],
-            'level': 'DEBUG',
-            'propagate': False,
-        },
-    },
-}
+# LOGGING = {
+#     'version': 1,
+#     'disable_existing_loggers': False,
+#     'handlers': {
+#         'console': {
+#             'class': 'logging.StreamHandler',
+#         },
+#     },
+#     'loggers': {
+#         'django': {
+#             'handlers': ['console'],
+#             'level': 'DEBUG',
+#         },
+#         'django.server': { # 添加这个
+#             'handlers': ['console'],
+#             'level': 'DEBUG', # 或者 INFO
+#             'propagate': False, # 通常 runserver 的日志不希望向上传播
+#         },
+#         'user_api': {
+#             'handlers': ['console'],
+#             'level': 'DEBUG',
+#             'propagate': False,
+#         },
+#     },
+# }
 # docker数据库配置
 DATABASES = {
     'default': {
