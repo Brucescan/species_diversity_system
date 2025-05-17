@@ -42,7 +42,7 @@ def run_pipeline():
 
 def run_server():
     """运行开发服务器"""
-    run_command("python manage.py runserver")
+    run_command("python manage.py runserver 0.0.0.0:8000")
 
 if __name__ == "__main__":
     pipeline_process = multiprocessing.Process(target=run_pipeline)

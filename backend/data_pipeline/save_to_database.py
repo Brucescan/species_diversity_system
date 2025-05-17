@@ -121,6 +121,15 @@ def process_aqi_data(raw_data, buffers, station_cache):
         station, _ = AQIStation.objects.get_or_create(
             name=station_name,
             defaults={
+
+
+
+
+
+
+
+
+
                 'location': Point(float(raw_data['longitude']), float(raw_data['latitude']))
             }
         )
@@ -130,25 +139,27 @@ def process_aqi_data(raw_data, buffers, station_cache):
 
     # 转换时间戳
     timestamp = datetime.fromtimestamp(int(raw_data['timeStamp']) / 1000)
-
-    # 创建AQI记录
-    aqi_record = AQIRecord(
-        station=station,
-        timestamp=timestamp,
-        aqi = 0 if raw_data['AQI'] in ("-", "—", "", None) else float(raw_data['AQI']),
-        timestr=raw_data["timePointStr"],
-        description=raw_data["description"],
-        measure=raw_data["measure"],
-        quality=raw_data['quality'] if raw_data['quality'] != '—' else None,
-        co=raw_data['CO'],
-        no2=raw_data['NO2'],
-        o3=raw_data['O3'],
-        pm10=raw_data['PM10'],
-        pm25=raw_data['PM2.5'],
-        so2=raw_data['SO2'],
-        raw_data=raw_data
-    )
-    buffers["aqi"].append(aqi_record)
+    if not AQIRecord.objects.filter(
+            timestamp=timestamp
+    ).exists():
+        # 创建AQI记录
+        aqi_record = AQIRecord(
+            station=station,
+            timestamp=timestamp,
+            aqi = 0 if raw_data['AQI'] in ("-", "—", "", None) else float(raw_data['AQI']),
+            timestr=raw_data["timePointStr"],
+            description=raw_data["description"],
+            measure=raw_data["measure"],
+            quality=raw_data['quality'] if raw_data['quality'] != '—' else None,
+            co=raw_data['CO'],
+            no2=raw_data['NO2'],
+            o3=raw_data['O3'],
+            pm10=raw_data['PM10'],
+            pm25=raw_data['PM2.5'],
+            so2=raw_data['SO2'],
+            raw_data=raw_data
+        )
+        buffers["aqi"].append(aqi_record)
 
 
 def check_batch_insert(buffers, batch_size, station_cache):

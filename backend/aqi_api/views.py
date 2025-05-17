@@ -37,9 +37,9 @@ class GetStationListView(APIView):
 
             if not latest_record:
                 continue
-
             # 构建响应数据
             station_data = {
+                'station_id': station.id,
                 'station_name': station.name,
                 'location': {
                     'latitude': station.location.y,

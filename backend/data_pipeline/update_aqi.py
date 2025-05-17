@@ -123,7 +123,6 @@ class UpDateAQI:
 
             # 将转换后的 aware 对象赋值给 timestamp 变量
             timestamp = aware_utc_dt
-            print(timestamp)
             # 检查是否已存在
             if not AQIRecord.objects.filter(
                     station__name=station_name,
