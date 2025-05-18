@@ -8,7 +8,7 @@ import execjs
 import time
 import ast
 from ddddocr import DdddOcr
-
+# TODO 暂时不知道什么原因导致一些数据无法获取，等待修复
 
 class FetchBird:
     def __init__(self):
@@ -97,6 +97,7 @@ class FetchBird:
                 "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36"
             }
             data_resp = self.session.post(self.url, headers=self.headers, data=resp["urlParam"])
+            print(data_resp.text,"这是第100行的响应")
             if data_resp.json()["code"]==505:
                 print("开始验证")
                 while True:
@@ -107,7 +108,7 @@ class FetchBird:
                 data_resp = self.session.post(self.url, headers=self.headers, data=resp["urlParam"])
                 print("收到响应",resp)
             data_res = self.js.call("decryptFn", data_resp.json()['data'])
-
+            one_page_data = []
             one_page_list = ast.literal_eval(data_res)
             for one_report in one_page_list:
                 if one_report["address"][:3] == "北京市":
@@ -116,9 +117,10 @@ class FetchBird:
                     one_report["get_details"] = get_details
                     species_details = self.get_species_details(f"page=1&limit=1500&reportId={one_report['reportId']}")
                     one_report["species_details"] = species_details
-                    bird_data.append(one_report)
+                    one_page_data.append(one_report)
             print(f"page{i+1}抓取完毕")
-        return self.process_bird_data(bird_data,queue)
+            self.process_bird_data(one_page_data, queue)
+        queue.put("鸟类数据抓取完毕")
 
     def get_get_details(self, reportId_data):
         """
@@ -131,7 +133,6 @@ class FetchBird:
         url = "https://api.birdreport.cn/front/activity/get"
         headers = {
             "accept": "application/json, text/javascript, */*; q=0.01",
-            # "accept-encoding": "gzip, deflate, br, zstd",
             "accept-language": "en-US,en;q=0.9",
             "connection": "keep-alive",
             "content-length": "172",
@@ -151,16 +152,20 @@ class FetchBird:
             "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36"
         }
         data_get_resp = self.session.post(url, headers=headers, data=params_resp["urlParam"])
-        if data_get_resp.json()['code']==505:
-            print("开始验证")
-            while True:
-                if self.process_verify():
-                    print("成功验证")
-                    break
-                print("继续验证")
-            data_get_resp = self.session.post(url, headers=headers, data=params_resp["urlParam"])
-            print("收到响应",data_get_resp.json())
-        data_get = self.js.call("decryptFn", data_get_resp.json()['data'])
+        print(data_get_resp.text,"这是第153行的响应")
+        try:
+            if data_get_resp.json()['code']==505:
+                print("开始验证")
+                while True:
+                    if self.process_verify():
+                        print("成功验证")
+                        break
+                    print("继续验证")
+                data_get_resp = self.session.post(url, headers=headers, data=params_resp["urlParam"])
+                print("收到响应",data_get_resp.json())
+            data_get = self.js.call("decryptFn", data_get_resp.json()['data'])
+        except:
+            return details
         # print(data_get)
         details["details"] = data_get
         return details
@@ -191,22 +196,26 @@ class FetchBird:
             "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36"
         }
         data_get_resp = self.session.post(url, headers=headers, data=params_resp["urlParam"])
-        if data_get_resp.json()['code']==505:
-            print("开始验证")
-            while True:
-                if self.process_verify():
-                    print("验证成功")
-                    break
-                print("继续验证")
-            data_get_resp = self.session.post(url, headers=headers, data=params_resp["urlParam"])
-            print("收到响应",data_get_resp.json())
-        data_get = self.js.call("decryptFn", data_get_resp.json()['data'])
+        print(data_get_resp.text,"我是第194行的错误")
+        try:
+            if data_get_resp.json()['code']==505:
+                print("开始验证")
+                while True:
+                    if self.process_verify():
+                        print("验证成功")
+                        break
+                    print("继续验证")
+                data_get_resp = self.session.post(url, headers=headers, data=params_resp["urlParam"])
+                print("收到响应",data_get_resp.json())
+            data_get = self.js.call("decryptFn", data_get_resp.json()['data'])
+        except:
+            return details
         # print(data_get)
         details["details"] = data_get
         return details
 
     def process_verify(self):
-        time.sleep(random.randint(1, 3))
+        time.sleep(random.randint(1, 2))
         url = "https://api.birdreport.cn/front/code/visited/generate"
         headers = {
             "accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
@@ -214,7 +223,6 @@ class FetchBird:
             "accept-language": "en-US,en;q=0.9",
             "cache-control": "no-cache",
             "connection": "keep-alive",
-            "cookie": "Hm_lvt_1546b4feab0a3de87d0ccdcc5900128e=1744721366,1744804395,1744976023,1745141046; HMACCOUNT=DEF8FA2CCE9EB727; Hm_lpvt_1546b4feab0a3de87d0ccdcc5900128e=1745141170; JSESSIONID=8C4E1901C5D542F4961AA53E2E227834",
             "host": "api.birdreport.cn",
             "pragma": "no-cache",
             "referer": "https://www.birdreport.cn/",
@@ -226,8 +234,7 @@ class FetchBird:
             "sec-fetch-site": "same-site",
             "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36"
         }
-        session = requests.Session()
-        resp = session.get(url, headers=headers, params={
+        resp = self.session.get(url, headers=headers, params={
             "timestamp": str(time.time_ns()),
         })
         docr = DdddOcr(show_ad=False)
@@ -257,7 +264,7 @@ class FetchBird:
             "sec-fetch-site": "same-site",
             "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36"
         }
-        res = session.post(verify_url, headers=verify_headers, json={
+        res = self.session.post(verify_url, headers=verify_headers, json={
             "code": str(verify_code),
         })
         print("返回的sucess==========",res.json()['success'])
@@ -266,7 +273,7 @@ class FetchBird:
         return False
 
     def process_bird_data(self,bird_data,queue):
-        # processed_data = []
+        print("开始处理数据==============================")
         for bird in bird_data:
             one_report = {}
             one_report["address"] = bird["address"]
@@ -274,10 +281,17 @@ class FetchBird:
             one_report["endTime"] = bird["endTime"]
             one_report["taxonCount"] = bird["taxonCount"]
             one_report["serialId"] = bird["serialId"]
+            print(bird["get_details"],type(bird["get_details"]))
+            if bird["get_details"] =={}:
+                continue
             one_report["longitude"] = eval(bird["get_details"]["details"])["location"].split(",")[0]
+            if bird["get_details"] =={}:
+                continue
             one_report["latitude"] = eval(bird["get_details"]["details"])["location"].split(",")[1]
+            print(bird["species_details"],type(bird["species_details"]))
+            if bird["species_details"] =={}:
+                continue
             one_report["species"] = eval(bird["species_details"]["details"])
             # processed_data.append(one_report)
             queue.put({"type":"bird","data":one_report})
-        queue.put("鸟类数据抓取完毕")
         return None

@@ -121,15 +121,6 @@ def process_aqi_data(raw_data, buffers, station_cache):
         station, _ = AQIStation.objects.get_or_create(
             name=station_name,
             defaults={
-
-
-
-
-
-
-
-
-
                 'location': Point(float(raw_data['longitude']), float(raw_data['latitude']))
             }
         )
@@ -140,7 +131,8 @@ def process_aqi_data(raw_data, buffers, station_cache):
     # 转换时间戳
     timestamp = datetime.fromtimestamp(int(raw_data['timeStamp']) / 1000)
     if not AQIRecord.objects.filter(
-            timestamp=timestamp
+            station__name=station_name,
+            timestamp=timestamp,
     ).exists():
         # 创建AQI记录
         aqi_record = AQIRecord(

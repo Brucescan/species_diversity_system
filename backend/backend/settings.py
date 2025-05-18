@@ -167,7 +167,7 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'static_collected')
 #         'PORT': '5432',              # 默认端口 5432
 #     }
 # }
-
+#
 # GDAL_LIBRARY_PATH = r'E:\anaconda3\envs\backend\Library\bin\gdal.dll'  # 替换为实际路径
 # GEOS_LIBRARY_PATH = r'E:\anaconda3\envs\backend\Library\bin\geos_c.dll'
 
