@@ -97,7 +97,6 @@ class FetchBird:
                 "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36"
             }
             data_resp = self.session.post(self.url, headers=self.headers, data=resp["urlParam"])
-            print(data_resp.text,"这是第100行的响应")
             if data_resp.json()["code"]==505:
                 print("开始验证")
                 while True:
@@ -152,7 +151,6 @@ class FetchBird:
             "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36"
         }
         data_get_resp = self.session.post(url, headers=headers, data=params_resp["urlParam"])
-        print(data_get_resp.text,"这是第153行的响应")
         try:
             if data_get_resp.json()['code']==505:
                 print("开始验证")
@@ -196,7 +194,6 @@ class FetchBird:
             "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36"
         }
         data_get_resp = self.session.post(url, headers=headers, data=params_resp["urlParam"])
-        print(data_get_resp.text,"我是第194行的错误")
         try:
             if data_get_resp.json()['code']==505:
                 print("开始验证")
@@ -281,14 +278,12 @@ class FetchBird:
             one_report["endTime"] = bird["endTime"]
             one_report["taxonCount"] = bird["taxonCount"]
             one_report["serialId"] = bird["serialId"]
-            print(bird["get_details"],type(bird["get_details"]))
             if bird["get_details"] =={}:
                 continue
             one_report["longitude"] = eval(bird["get_details"]["details"])["location"].split(",")[0]
             if bird["get_details"] =={}:
                 continue
             one_report["latitude"] = eval(bird["get_details"]["details"])["location"].split(",")[1]
-            print(bird["species_details"],type(bird["species_details"]))
             if bird["species_details"] =={}:
                 continue
             one_report["species"] = eval(bird["species_details"]["details"])

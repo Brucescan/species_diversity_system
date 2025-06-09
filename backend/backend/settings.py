@@ -140,16 +140,16 @@ REST_FRAMEWORK = {
 #     },
 # }
 # docker数据库配置
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.contrib.gis.db.backends.postgis',
-        'NAME': os.getenv('POSTGRES_DB', 'mydb'),
-        'USER': os.getenv('POSTGRES_USER', 'postgres'),
-        'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'postgres'),
-        'HOST': os.getenv('POSTGRES_HOST', 'db'),  # 修改为 Docker Compose 中的服务名
-        'PORT': os.getenv('POSTGRES_PORT', '5432'),
-    }
-}
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.contrib.gis.db.backends.postgis',
+#         'NAME': os.getenv('POSTGRES_DB', 'mydb'),
+#         'USER': os.getenv('POSTGRES_USER', 'postgres'),
+#         'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'postgres'),
+#         'HOST': os.getenv('POSTGRES_HOST', 'db'),  # 修改为 Docker Compose 中的服务名
+#         'PORT': os.getenv('POSTGRES_PORT', '5432'),
+#     }
+# }
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, "static"),
@@ -157,19 +157,19 @@ STATICFILES_DIRS = [
 STATIC_ROOT = os.path.join(BASE_DIR, 'static_collected')
 # STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
 # 本地开发数据配置
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.contrib.gis.db.backends.postgis',
-#         'NAME': 'mydb',     # 数据库名称
-#         'USER': 'postgres',      # 数据库用户名（默认可能是 postgres）
-#         'PASSWORD': '123456', # 用户密码
-#         'HOST': 'localhost',         # 数据库地址（本地为 localhost 或 127.0.0.1）
-#         'PORT': '5432',              # 默认端口 5432
-#     }
-# }
-#
-# GDAL_LIBRARY_PATH = r'E:\anaconda3\envs\backend\Library\bin\gdal.dll'  # 替换为实际路径
-# GEOS_LIBRARY_PATH = r'E:\anaconda3\envs\backend\Library\bin\geos_c.dll'
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.contrib.gis.db.backends.postgis',
+        'NAME': 'mydb',     # 数据库名称
+        'USER': 'postgres',      # 数据库用户名（默认可能是 postgres）
+        'PASSWORD': '123456', # 用户密码
+        'HOST': 'localhost',         # 数据库地址（本地为 localhost 或 127.0.0.1）
+        'PORT': '5432',              # 默认端口 5432
+    }
+}
+
+GDAL_LIBRARY_PATH = r'E:\anaconda3\envs\backend\Library\bin\gdal.dll'  # 替换为实际路径
+GEOS_LIBRARY_PATH = r'E:\anaconda3\envs\backend\Library\bin\geos_c.dll'
 
 USE_TZ = True
 TIME_ZONE = 'Asia/Shanghai'  # 根据你的需求设置
