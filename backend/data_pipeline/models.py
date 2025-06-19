@@ -12,7 +12,7 @@ class BirdObservation(models.Model):
     serial_id = models.CharField(max_length=50, unique=False, verbose_name="记录编号")
 
     # 空间字段（使用GeoDjango）
-    location = gis_models.PointField(geography=True, verbose_name="坐标点")
+    location = gis_models.PointField(verbose_name="坐标点")
 
     # 原始数据备份（可选）
     raw_data = JSONField(null=True, blank=True, verbose_name="原始数据")
@@ -71,7 +71,7 @@ class BirdSpeciesRecord(models.Model):
 class AQIStation(models.Model):
     """空气质量监测站基础信息"""
     name = models.CharField(max_length=100, verbose_name="监测站名称")
-    location = gis_models.PointField(geography=True, verbose_name="坐标位置")
+    location = gis_models.PointField(verbose_name="坐标位置")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="创建时间")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="更新时间")
 

@@ -158,7 +158,7 @@ def check_batch_insert(buffers, batch_size, station_cache):
     """检查并执行批量插入"""
     with transaction.atomic():
         # 处理鸟类观测数据
-        if len(buffers["bird_observations"]) >= batch_size:
+        if len(buffers["bird_observations"]) >= 20:
             # 先保存观测记录
             BirdObservation.objects.bulk_create(buffers["bird_observations"])
             print(f"批量插入鸟类观测数据，共{len(buffers['bird_observations'])}条")

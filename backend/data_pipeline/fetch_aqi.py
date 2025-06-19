@@ -66,12 +66,12 @@ class FetchAQI:
                 one_data["quality"] = one_time["Quality"]
                 one_data["description"] = one_time["Unheathful"]
                 one_data["AQI"] = one_time["AQI"]
-                one_data["CO"] = str(one_time["COLevel"]) + "," + str(one_time["CO"]) + "," + str(one_time["CO_24h"])
-                one_data["NO2"] = str(one_time["NO2Level"]) + "," + str(one_time["NO2"]) + "," + str(one_time["NO2_24h"])
-                one_data["O3"] = str(one_time["O3Level"]) + "," + str(one_time["O3_8hLevel"]) + "," + str(one_time["O3"]) + "," + str(one_time["O3_8h"]) + "," + str(one_time["O3_24h"])
-                one_data["PM10"] = str(one_time["PM10Level"]) + "," + str(one_time["PM10"]) + "," + str(one_time["PM10_24h"])
-                one_data["PM2.5"] = str(one_time["PM2_5Level"]) + "," + str(one_time["PM2_5"]) + "," + str(one_time["PM2_5_24h"])
-                one_data["SO2"] = str(one_time["SO2Level"]) + "," + str(one_time["SO2"]) + "," + str(one_time["SO2_24h"])
+                one_data["CO"] = str(one_time["CO"])
+                one_data["NO2"] = str(one_time["NO2"])
+                one_data["O3"] = str(one_time["O3"])
+                one_data["PM10"] = str(one_time["PM10"])
+                one_data["PM2.5"] = str(one_time["PM2_5"])
+                one_data["SO2"] = str(one_time["SO2"])
                 queue.put({
                     "type":"AQI",
                     "data":one_data

@@ -67,8 +67,8 @@ class FetchBird:
         :return: 总数据
         """
         # page_count = self.get_page_count()
-        # 因为数据量大，所以先写死
-        page_count = 3
+        # 因为数据量太大，所以先写死
+        page_count = 10
         bird_data = []
         for i in range(page_count):
             jiami_data = {
@@ -280,13 +280,17 @@ class FetchBird:
             one_report["serialId"] = bird["serialId"]
             if bird["get_details"] =={}:
                 continue
-            one_report["longitude"] = eval(bird["get_details"]["details"])["location"].split(",")[0]
-            if bird["get_details"] =={}:
+            try:
+                one_report["longitude"] = eval(bird["get_details"]["details"])["location"].split(",")[0]
+                one_report["latitude"] = eval(bird["get_details"]["details"])["location"].split(",")[1]
+            except:
                 continue
-            one_report["latitude"] = eval(bird["get_details"]["details"])["location"].split(",")[1]
             if bird["species_details"] =={}:
                 continue
-            one_report["species"] = eval(bird["species_details"]["details"])
+            try:
+                one_report["species"] = eval(bird["species_details"]["details"])
+            except:
+                continue
             # processed_data.append(one_report)
             queue.put({"type":"bird","data":one_report})
         return None
