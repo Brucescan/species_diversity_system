@@ -63,7 +63,8 @@ class LoginView(APIView):
                 'code': 201,
                 'token': token.key,
                 'user_id': user.pk,
-                'email': user.email
+                'email': user.email,
+                'username':user.username,
             })
         return Response(
             {'error': 'Invalid Credentials'},

@@ -7,3 +7,5 @@ schedule~=1.2.2
 django-cors-headers
 pyexecjs2
 psycopg2
+scipy
+pandas

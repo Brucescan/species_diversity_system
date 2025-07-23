@@ -50,7 +50,6 @@ if __name__ == "__main__":
 
     pipeline_process.start()
 
-    time.sleep(5)
     server_process.start()
 
     pipeline_process.join()

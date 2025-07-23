@@ -14,6 +14,7 @@ services:
       - POSTGRES_PORT=5432
       - GDAL_LIBRARY_PATH=/usr/lib/libgdal.so
       - GEOS_LIBRARY_PATH=/usr/lib/libgeos_c.so
+      - PYTHONUNBUFFERED=1  # <--- 就加这一行
     depends_on:
       database:
         condition: service_healthy

@@ -68,7 +68,7 @@ class FetchBird:
         """
         # page_count = self.get_page_count()
         # 因为数据量太大，所以先写死
-        page_count = 10
+        page_count = 1000
         bird_data = []
         for i in range(page_count):
             jiami_data = {
