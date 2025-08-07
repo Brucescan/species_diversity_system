@@ -9,3 +9,11 @@ pyexecjs2
 psycopg2
 scipy
 pandas
+GDAL==3.6.4
+django-filter
+xarray
+joblib
+numpy
+geopandas
+lightgbm
+scikit-learn==1.4.2

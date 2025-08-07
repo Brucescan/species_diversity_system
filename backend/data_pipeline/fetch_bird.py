@@ -8,6 +8,8 @@ import execjs
 import time
 import ast
 from ddddocr import DdddOcr
+
+
 # TODO 暂时不知道什么原因导致一些数据无法获取，等待修复
 
 class FetchBird:
@@ -50,7 +52,7 @@ class FetchBird:
             "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36"
         }
         data_resp = self.session.post(self.url, headers=self.headers, data=resp["urlParam"])
-        if data_resp.json()['code']==505:
+        if data_resp.json()['code'] == 505:
             print("开始验证")
             while True:
                 if self.process_verify():
@@ -58,19 +60,20 @@ class FetchBird:
                     break
                 print("继续验证")
             data_resp = self.session.post(self.url, headers=self.headers, data=resp["urlParam"])
-            print("收到响应",data_resp.json())
-        return int(int(data_resp.json()["count"])/50)+1
+            print("收到响应", data_resp.json())
+        return int(int(data_resp.json()["count"]) / 50) + 1
 
-    def get_all_data(self,queue):
+    def get_all_data(self, queue):
         """
         获取数据的主函数
         :return: 总数据
         """
-        # page_count = self.get_page_count()
+        page_count = self.get_page_count()
+        print(f"总共有{page_count}条数据========================================")
         # 因为数据量太大，所以先写死
-        page_count = 1000
+        # page_count = 1000
         bird_data = []
-        for i in range(page_count):
+        for i in range(50):
             jiami_data = {
                 "data": f"page={i + 1}&limit=50&sortBy=startTime&orderBy=desc",
             }
@@ -97,7 +100,7 @@ class FetchBird:
                 "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36"
             }
             data_resp = self.session.post(self.url, headers=self.headers, data=resp["urlParam"])
-            if data_resp.json()["code"]==505:
+            if data_resp.json()["code"] == 505:
                 print("开始验证")
                 while True:
                     if self.process_verify():
@@ -105,7 +108,7 @@ class FetchBird:
                         break
                     print("继续验证")
                 data_resp = self.session.post(self.url, headers=self.headers, data=resp["urlParam"])
-                print("收到响应",resp)
+                print("收到响应", resp)
             data_res = self.js.call("decryptFn", data_resp.json()['data'])
             one_page_data = []
             one_page_list = ast.literal_eval(data_res)
@@ -117,7 +120,7 @@ class FetchBird:
                     species_details = self.get_species_details(f"page=1&limit=1500&reportId={one_report['reportId']}")
                     one_report["species_details"] = species_details
                     one_page_data.append(one_report)
-            print(f"page{i+1}抓取完毕")
+            print(f"page{i + 1}抓取完毕")
             self.process_bird_data(one_page_data, queue)
         queue.put("鸟类数据抓取完毕")
 
@@ -152,7 +155,7 @@ class FetchBird:
         }
         data_get_resp = self.session.post(url, headers=headers, data=params_resp["urlParam"])
         try:
-            if data_get_resp.json()['code']==505:
+            if data_get_resp.json()['code'] == 505:
                 print("开始验证")
                 while True:
                     if self.process_verify():
@@ -160,7 +163,7 @@ class FetchBird:
                         break
                     print("继续验证")
                 data_get_resp = self.session.post(url, headers=headers, data=params_resp["urlParam"])
-                print("收到响应",data_get_resp.json())
+                print("收到响应", data_get_resp.json())
             data_get = self.js.call("decryptFn", data_get_resp.json()['data'])
         except:
             return details
@@ -195,7 +198,7 @@ class FetchBird:
         }
         data_get_resp = self.session.post(url, headers=headers, data=params_resp["urlParam"])
         try:
-            if data_get_resp.json()['code']==505:
+            if data_get_resp.json()['code'] == 505:
                 print("开始验证")
                 while True:
                     if self.process_verify():
@@ -203,7 +206,7 @@ class FetchBird:
                         break
                     print("继续验证")
                 data_get_resp = self.session.post(url, headers=headers, data=params_resp["urlParam"])
-                print("收到响应",data_get_resp.json())
+                print("收到响应", data_get_resp.json())
             data_get = self.js.call("decryptFn", data_get_resp.json()['data'])
         except:
             return details
@@ -264,12 +267,12 @@ class FetchBird:
         res = self.session.post(verify_url, headers=verify_headers, json={
             "code": str(verify_code),
         })
-        print("返回的sucess==========",res.json()['success'])
+        print("返回的sucess==========", res.json()['success'])
         if res.json()["success"]:
             return True
         return False
 
-    def process_bird_data(self,bird_data,queue):
+    def process_bird_data(self, bird_data, queue):
         print("开始处理数据==============================")
         for bird in bird_data:
             one_report = {}
@@ -278,19 +281,19 @@ class FetchBird:
             one_report["endTime"] = bird["endTime"]
             one_report["taxonCount"] = bird["taxonCount"]
             one_report["serialId"] = bird["serialId"]
-            if bird["get_details"] =={}:
+            if bird["get_details"] == {}:
                 continue
             try:
                 one_report["longitude"] = eval(bird["get_details"]["details"])["location"].split(",")[0]
                 one_report["latitude"] = eval(bird["get_details"]["details"])["location"].split(",")[1]
             except:
                 continue
-            if bird["species_details"] =={}:
+            if bird["species_details"] == {}:
                 continue
             try:
                 one_report["species"] = eval(bird["species_details"]["details"])
             except:
                 continue
             # processed_data.append(one_report)
-            queue.put({"type":"bird","data":one_report})
+            queue.put({"type": "bird", "data": one_report})
         return None

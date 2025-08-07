@@ -2,10 +2,21 @@ import re
 from collections import defaultdict
 
 from rest_framework.permissions import AllowAny
+from django_filters.rest_framework import DjangoFilterBackend # 导入 DjangoFilterBackend
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import generics, permissions, status
 from data_pipeline.models import BirdSpeciesRecord
+from .models import Record, Comment, RecordDetail, SpeciesCount
+from .serializers import (
+    RecordCreateSerializer,
+    RecordBasicSerializer,
+    RecordFullSerializer,
+    CommentSerializer,
+    UserSerializer
+)
+from .permissions import IsOwnerOrReadOnly
+from .filters import RecordFilter
 
 class DistrictSpeciesSummaryView(APIView):
     """
@@ -70,3 +81,73 @@ class DistrictSpeciesSummaryView(APIView):
         result_data.sort(key=lambda x: x["物种总数"], reverse=True) # 按物种总数降序
 
         return Response({"code":201,"data":result_data})
+
+# 1. 创建记录信息的接口 (POST /api/bird_records/)
+class RecordCreateAPIView(generics.CreateAPIView):
+    queryset = Record.objects.all()
+    serializer_class = RecordCreateSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    # perform_create 不再需要手动设置 user，因为 create 序列化器中已经处理
+
+# 2. 提供基本信息接口 (GET /api/bird_records/basic/)
+# 搜索指定条件的报告 (修改现有的 RecordListBasicAPIView)
+class RecordListBasicAPIView(generics.ListAPIView):
+    queryset = Record.objects.select_related('user').all()
+    serializer_class = RecordBasicSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    # --- 新增过滤配置 ---
+    filter_backends = [DjangoFilterBackend]  # 指定使用 DjangoFilterBackend
+    filterset_class = RecordFilter  # 指定我们创建的过滤器类
+
+# 3. 提供详细信息接口 (GET /api/bird_records/<pk>/full/)
+# 获取指定记录的详细信息，包含 RecordDetail 和 SpeciesCount，以及其他用户的评论
+class RecordDetailFullAPIView(generics.RetrieveAPIView):
+    # 使用 select_related 获取 Record 的 user 和 details
+    # 使用 prefetch_related 获取 comments (以及 comments 的 user) 和 details 的 species_counts
+    queryset = Record.objects.select_related('user', 'details') \
+        .prefetch_related('comments__user', 'details__species_counts').all()
+    serializer_class = RecordFullSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+# 4. 评论接口 (POST /api/bird_records/<pk>/comments/)
+# 为某个记录添加评论
+class CommentCreateAPIView(generics.CreateAPIView):
+    queryset = Comment.objects.all()
+    serializer_class = CommentSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def perform_create(self, serializer):
+        # 从 URL 参数中获取 record_pk (这里是 <int:pk>)
+        record_pk = self.kwargs.get('pk')
+        try:
+            record = Record.objects.get(pk=record_pk)
+        except Record.DoesNotExist:
+            return Response(
+                {"detail": "Record not found."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        # 自动设置评论所属的记录和评论用户
+        serializer.save(record=record, user=self.request.user)
+
+#新增：获取当前登录用户提交的所有记录的基本信息
+class CurrentUserRecordListView(generics.ListAPIView):
+    serializer_class = RecordBasicSerializer # 返回基本信息，与 RecordListBasicAPIView 保持一致
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Record.objects.select_related('user').filter(user=self.request.user)
+
+
+# 删除记录
+class RecordRetrieveDestroyAPIView(generics.RetrieveDestroyAPIView):
+    """
+    - GET: 获取单个记录的详细信息 (使用 RecordFullSerializer)。
+    - DELETE: 删除单个记录 (只有记录所有者可以删除)。
+    """
+    queryset = Record.objects.all() # queryset 保持不变
+    # 对于获取详情，我们返回完整信息
+    serializer_class = RecordFullSerializer
+    # 使用我们创建的自定义权限
+    permission_classes = [permissions.IsAuthenticated, IsOwnerOrReadOnly]

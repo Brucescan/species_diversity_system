@@ -62,7 +62,7 @@ def main():
         arcpy.AddMessage("正在执行全局莫兰指数计算 (使用官方推荐的 SpatialAutocorrelation 函数)...")
 
         morans_i_result = arcpy.stats.SpatialAutocorrelation(
-            Input_Feature_Class=input_data_path,
+            Input_Feature_Class=local_input_copy,
             Input_Field=analysis_field,
             Generate_Report="GENERATE_REPORT",  # <-- 修改点 1: 启用报告生成
             Conceptualization_of_Spatial_Relationships=conceptualization_param,

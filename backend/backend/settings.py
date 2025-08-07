@@ -20,10 +20,11 @@ INSTALLED_APPS = [
     'django.contrib.gis',
     'aqi_api',
     'bird_api',
-    'analysis_api',
+    'django_filters',
+    'analysis_api.apps.AnalysisApiConfig'
 ]
 
-ALLOWED_HOSTS = ['*']  # 根据实际情况添加域名或IP地址
+ALLOWED_HOSTS = ['*']
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -61,6 +62,8 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 10, # 可选：为列表接口添加分页
 }
 # LOGGING = {
 #     'version': 1,
@@ -168,7 +171,7 @@ DATABASES = {
         'PORT': '5432',              # 默认端口 5432
     }
 }
-
+#
 GDAL_LIBRARY_PATH = r'E:\anaconda3\envs\backend\Library\bin\gdal.dll'  # 替换为实际路径
 GEOS_LIBRARY_PATH = r'E:\anaconda3\envs\backend\Library\bin\geos_c.dll'
 

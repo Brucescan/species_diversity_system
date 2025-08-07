@@ -205,7 +205,7 @@ class UpDateAQI:
     def _clean_old_data(self):
         """清理超过30天的旧数据"""
         try:
-            thirty_days_ago = timezone.now() - timedelta(days=365)
+            thirty_days_ago = timezone.now() - timedelta(days=5*365)
             deleted_count, _ = AQIRecord.objects.filter(
                 timestamp__lt=thirty_days_ago
             ).delete()

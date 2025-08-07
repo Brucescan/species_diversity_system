@@ -41,7 +41,6 @@ def create_analysis_grid(output_grid_fc, template_fc, grid_cell_size):
     oid_field_name = arcpy.Describe(output_grid_fc).OIDFieldName
     expression = "!" + oid_field_name + "!"
     arcpy.CalculateField_management(output_grid_fc, "Grid_ID", expression, "PYTHON3")
-    arcpy.AddMessage("又修改了脚本了！！！！！！！！！！！！！！！！！！！！！！！！")
     arcpy.AddMessage("  'Grid_ID' 字段计算完成。")
 
 
@@ -55,21 +54,29 @@ def process_aqi_data(grid_fc, start_date, end_date, db_connection_sde, pollutant
     此版本修复了插值范围及snapRaster参数类型错误的问题。
     """
     arcpy.AddMessage("  1. 从数据库提取并处理空气质量数据...")
-    pollutant_avg_expressions = ["AVG(CAST(r.{} AS numeric)) AS avg_{}".format(p, p) for p in pollutants_list]
+    # 视图名称
+    view_name = "public.v_station_daily_averages"
 
+    # 构建所有污染物的AVG()表达式，注意字段名和视图中一致
+    avg_expressions = ", ".join(["AVG({}) AS avg_{}".format(p, p) for p in pollutants_list])
+
+    # 最终的SQL查询
     query_sql = """
-    SELECT
-        s.id as station_id,
-        s.location,
-        {poll_expr}
-    FROM {aqi_station_tbl} s
-    JOIN {aqi_record_tbl} r ON s.id = r.station_id
-    WHERE r.timestamp BETWEEN '{s_date} 00:00:00' AND '{e_date} 23:59:59'
-    GROUP BY s.id, s.location
-    """.format(
-        poll_expr=', '.join(pollutant_avg_expressions),
-        aqi_station_tbl=aqi_station_table,
-        aqi_record_tbl=aqi_record_table,
+        SELECT
+            station_id,
+            station_name,
+            location,
+            {avg_expr}
+        FROM
+            {view}
+        WHERE
+            record_date >= '{s_date}'::date AND
+            record_date <= '{e_date}'::date
+        GROUP BY
+            station_id, station_name, location
+        """.format(
+        avg_expr=avg_expressions,
+        view=view_name,
         s_date=start_date,
         e_date=end_date
     )
@@ -95,7 +102,7 @@ def process_aqi_data(grid_fc, start_date, end_date, db_connection_sde, pollutant
 
     count = int(arcpy.GetCount_management(station_points_gcs)[0])
     if count == 0:
-        arcpy.addWarning(
+        arcpy.AddWarning(
             "警告：在时间段 {} 到 {} 内没有找到任何有效的AQI记录。AQI字段将为空。".format(start_date, end_date))
         for pollutant in pollutants_list:
             field_name = "avg_{}".format(pollutant)
@@ -425,7 +432,7 @@ def main():
 
         target_projected_crs = arcpy.SpatialReference(32650)
         grid_cell_size = "2000"
-        pollutants_list = ['pm25', 'no2', 'o3', 'so2', 'co']
+        pollutants_list = ['pm25', 'no2', 'o3', 'so2', 'co','aqi']
         db_schema = "public"
         aqi_station_table = '{}.data_pipeline_aqistation'.format(db_schema)
         aqi_record_table = '{}.data_pipeline_aqirecord'.format(db_schema)
