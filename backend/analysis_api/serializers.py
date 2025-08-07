@@ -1,5 +1,5 @@
 # analysis_api/serializers.py
-
+import pandas as pd
 from rest_framework import serializers
 
 
@@ -34,3 +34,15 @@ class SpearmanAnalysisSerializer(serializers.Serializer):
         if len(field_list) < 2:
             raise serializers.ValidationError("分析字段至少需要两个。")
         return value  # 验证通过后必须返回原始值
+
+class PredictionInputSerializer(serializers.Serializer):
+    start_month_str = serializers.CharField(max_length=7, help_text="预测开始月份，格式 YYYY-MM")
+    num_months = serializers.ChoiceField(choices=[1, 3, 6], help_text="预测月数，可选 1, 3, 6")
+
+    def validate_start_month_str(self, value):
+        try:
+            # 尝试解析，确保格式正确
+            pd.to_datetime(value, format='%Y-%m')
+        except ValueError:
+            raise serializers.ValidationError("start_month_str 格式不正确，应为 YYYY-MM。")
+        return value

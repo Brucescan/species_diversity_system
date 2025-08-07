@@ -1,13 +1,16 @@
 # analysis_api/views.py
+import json
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from .serializers import SpearmanAnalysisSerializer
-
+from .serializers import SpearmanAnalysisSerializer,PredictionInputSerializer
+from .services.prediction_service import perform_prediction
+from .services.ml_loader import GLOBAL_DF_HISTORY_PROCESSED
 # 导入必要的第三方库
 from osgeo import ogr
 import pandas as pd
+import geopandas as gpd
 from scipy.stats import spearmanr
 
 
@@ -120,3 +123,91 @@ class SpearmanAnalysisView(APIView):
             # 捕获任何未预料到的异常，防止服务崩溃
             return Response({"error": f"服务器内部发生未知错误: {str(e)}"},
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class PredictFutureBaselineView(APIView):
+    """
+    根据给定的开始月份和月数，预测未来的生物多样性基线指标。
+    """
+    permission_classes = [AllowAny]
+
+    def get(self, request, *args, **kwargs):
+        # 1. 验证输入参数
+        serializer = PredictionInputSerializer(data=request.query_params)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        validated_data = serializer.validated_data
+        start_month_str = validated_data['start_month_str']
+        num_months = validated_data['num_months']
+
+        try:
+            # 2. 确定预测时间范围
+            start_date = pd.to_datetime(start_month_str)
+            # freq='M' 表示每月的最后一天
+            target_dates = pd.date_range(start=start_date, periods=num_months, freq='M')
+
+            # 3. 调用核心预测服务
+            prediction_results = perform_prediction(target_dates)
+
+            # 4. 返回结果
+            return Response(prediction_results, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            # 记录详细错误日志会更好
+            print(f"Prediction Error: {e}")
+            import traceback
+            traceback.print_exc()
+            return Response(
+                {"error": "服务器在预测过程中发生内部错误。", "details": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class GridGeometriesView(APIView):
+    """
+    提供所有网格单元的地理信息（GeoJSON格式）。
+    """
+    permission_classes = [AllowAny]
+
+    def get(self, request, *args, **kwargs):
+        if GLOBAL_DF_HISTORY_PROCESSED is None:
+            return Response(
+                {"error": "服务器正在初始化地理数据，请稍后再试。"},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE
+            )
+
+        try:
+            # 1. 提取唯一的 Grid_ID 和 geometry
+            unique_geometries_df = GLOBAL_DF_HISTORY_PROCESSED[['Grid_ID', 'geometry']].drop_duplicates('Grid_ID')
+
+            # --- 关键修复 1：在转换前先清理数据 ---
+            # 明确移除 geometry 列为 None 或 NaN 的行
+            valid_geometries_df = unique_geometries_df.dropna(subset=['geometry']).copy()
+
+            if valid_geometries_df.empty:
+                print("警告: 清理后没有找到任何有效的地理信息。")
+                return Response({"type": "FeatureCollection", "features": []}, status=status.HTTP_200_OK)
+
+            # 2. 转换为 GeoDataFrame
+            gdf = gpd.GeoDataFrame(valid_geometries_df, geometry='geometry')
+
+            # ... [坐标系转换部分保持不变] ...
+
+            # 3. 转换为 GeoJSON
+            geojson_str = gdf.to_json()  # dropna=True 在这里不再是必须的，因为我们已经手动 dropna 了
+
+            # 4. 返回结果
+            geojson_data = json.loads(geojson_str)
+            return Response(geojson_data, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            # --- 关键修复 2：打印详细的错误 traceback ---
+            import traceback
+            print("--- GridGeometriesView 发生错误 ---")
+            traceback.print_exc()  # 这会打印完整的错误堆栈信息到控制台
+            print("-----------------------------------")
+            return Response(
+                {"error": "创建地理信息时发生内部错误。", "details": str(e)},  # 把错误详情也返回给 Postman
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
