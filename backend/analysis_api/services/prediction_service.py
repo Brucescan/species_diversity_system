@@ -1,68 +1,35 @@
 # analysis_api/services/prediction_service.py
-
 import pandas as pd
 import numpy as np
+import xarray as xr
 from .ml_loader import MODELS, GLOBAL_DF_HISTORY_PROCESSED
 
 
-def _create_baseline_row(grid_id, target_date, history_df):
-    """为单个 Grid_ID 和未来月份创建基线特征行"""
-    # 1. 提取静态特征：从该网格最新的历史记录中获取
-    latest_grid_record = history_df[history_df['Grid_ID'] == grid_id].sort_values('timestamp').iloc[-1]
+def _recalculate_temporal_features_batch(full_df):
+    """
+    在一个包含历史和未来基线的大 DataFrame 上，为所有网格批量重新计算时间特征。
+    """
+    # 确保时间戳是 datetime 类型并且已排序
+    full_df['timestamp'] = pd.to_datetime(full_df['timestamp'])
+    full_df = full_df.sort_values(by=['Grid_ID', 'timestamp'])
 
-    # 假设这些是静态特征
-    static_cols = [ 'Avg_Height', 'Avg_Slope', 'Avg_Aspect', 'Avg_Relief',
-                   'Water_Pct', 'Tree_Pct', 'Crop_Pct', 'BuiltArea_']
-    baseline = latest_grid_record[static_cols].to_dict()
-    baseline['Grid_ID'] = grid_id
-    baseline['timestamp'] = target_date
+    # 在处理前，确保 'has_richness' 列不存在 (因为它不是一个独立的特征，而是目标的衍生物)
+    if 'has_richness' in full_df.columns:
+        full_df = full_df.drop(columns=['has_richness'])
 
-    # 2. 计算月度动态特征的平均值 ("最新一年同月平均值")
-    target_month = target_date.month
-    # 优先使用前一年的数据
-    last_year_date_start = pd.Timestamp(year=target_date.year - 1, month=target_month, day=1)
-    last_year_date_end = last_year_date_start + pd.offsets.MonthEnd(0)
+    # 使用 xarray 进行高效的 groupby + shift/rolling 操作
+    cols_to_process = [col for col in full_df.columns if col != 'geometry']
+    ds = full_df[cols_to_process].set_index(['Grid_ID', 'timestamp']).to_xarray()
 
-    # 筛选出与目标月份相同的历史数据
-    same_month_history = history_df[
-        (history_df['Grid_ID'] == grid_id) &
-        (history_df['timestamp'].dt.month == target_month)
-        ]
-
-    # 筛选出前一年的同月数据
-    last_year_same_month_data = same_month_history[
-        (same_month_history['timestamp'] >= last_year_date_start) &
-        (same_month_history['timestamp'] <= last_year_date_end)
-        ]
-
-    dynamic_features_source = same_month_history
-    if not last_year_same_month_data.empty:
-        # 如果前一年有数据，优先使用
-        dynamic_features_source = last_year_same_month_data
-
-    dynamic_cols = ['avg_pm25', 'temp_c', 'precip_mm', 'evi']
-    for col in dynamic_cols:
-        if not dynamic_features_source.empty:
-            baseline[col] = dynamic_features_source[col].mean()
-        else:
-            # 如果历史上完全没有这个月的数据，用0或全局平均值填充
-            baseline[col] = 0
-
-    return pd.DataFrame([baseline])
-
-
-def _recalculate_temporal_features(temp_df):
-    """在一个临时的 DataFrame 上重新计算时间特征（滞后、滚动）"""
-    ds = temp_df.set_index(['Grid_ID', 'timestamp']).to_xarray()
-
-    # 时间滞后特征
+    # --- 滞后特征 ---
     lags = [1, 3, 6, 12]
-    lag_vars = ['richness', 'abundance', 'shannon', 'avg_pm25', 'temp_c', 'evi']  # Tree/Water Pct 是静态的
+    lag_vars = ['richness', 'abundance', 'shannon', 'avg_pm25', 'temp_c', 'evi', 'Tree_Pct', 'Water_Pct']
     for var in lag_vars:
         if var in ds:
-            for lag in lags: ds[f'{var}_lag{lag}'] = ds[var].shift(timestamp=lag)
+            for lag in lags:
+                ds[f'{var}_lag{lag}'] = ds[var].shift(timestamp=lag)
 
-    # 时间聚合特征
+    # --- 滚动特征 ---
     rolling_windows = [3, 6]
     for window in rolling_windows:
         for var in ['avg_pm25', 'temp_c']:
@@ -72,107 +39,134 @@ def _recalculate_temporal_features(temp_df):
         if 'precip_mm' in ds:
             ds[f'precip_mm_sum_{window}mo'] = ds['precip_mm'].rolling(timestamp=window, center=False).sum()
 
-    final_row_df = ds.to_dataframe().reset_index().iloc[[-1]]
-    return final_row_df
+    return ds.to_dataframe().reset_index()
 
 
 def _calculate_composite_index(richness, abundance, shannon):
-    """
-    计算生态环境综合指标。
-    !!!注意!!!: 这是一个占位符。您需要根据您的标准化和加权逻辑来实现它。
-    """
-    # 示例：简单的加权平均（权重需要您来定义）
-    # 假设所有值都已被标准化到 0-1 之间
-    # weights = {'richness': 0.4, 'abundance': 0.3, 'shannon': 0.3}
-    # composite_index = (richness * weights['richness'] +
-    #                    abundance * weights['abundance'] +
-    #                    shannon * weights['shannon'])
-    # 为了演示，我们暂时返回丰富度的值
+    """计算生态环境综合指标 (占位符)。"""
     return shannon
 
 
 def perform_prediction(target_dates):
     """
-    执行完整的预测循环。
+    执行完整的预测循环 (高性能向量化版本)。
+    此版本已修复 'has_richness' not in index 错误。
     """
-    history_df = GLOBAL_DF_HISTORY_PROCESSED
-    if history_df is None:
+    if GLOBAL_DF_HISTORY_PROCESSED is None:
         raise Exception("历史数据尚未加载，服务无法预测。")
 
-    all_grid_ids = history_df['Grid_ID'].unique()
-    all_results = {}  # 使用字典 {grid_id: [predictions]} 结构
+    first_target_date = min(target_dates)
+    history_df = GLOBAL_DF_HISTORY_PROCESSED[
+        GLOBAL_DF_HISTORY_PROCESSED['timestamp'] < first_target_date
+        ].copy()
+    print(f"用于预测的真实历史数据范围： {history_df['timestamp'].min()} to {history_df['timestamp'].max()}")
 
-    # 准备一个所有模型输入特征的模板列，以保证一致性
-    # 从一个加载好的回归模型中获取特征列表
-    model_feature_cols = MODELS['richness_regressor'].feature_name_
-    leaky_features_for_classifier = [col for col in model_feature_cols if
-                                     'richness' in col or 'abundance' in col or 'shannon' in col]
-    leaky_features_for_classifier.append('BuiltArea_')
+    # --- 预计算和准备 (现在基于干净的 history_df) ---
+    print("开始预测前的预计算...")
+    static_cols = ['Avg_Height', 'Avg_Slope', 'Avg_Aspect', 'Avg_Relief',
+                   'Water_Pct', 'Tree_Pct', 'Crop_Pct', 'BuiltArea_']
+    dynamic_cols = ['avg_pm25', 'temp_c', 'precip_mm', 'evi']
 
-    for grid_id in all_grid_ids:
-        all_results[grid_id] = []
+    latest_static_features = history_df.sort_values('timestamp').drop_duplicates('Grid_ID', keep='last')[
+        ['Grid_ID'] + static_cols]
+
+    monthly_avg_dynamic = history_df.groupby([history_df['Grid_ID'], history_df['timestamp'].dt.month])[
+        dynamic_cols].mean().reset_index()
+    monthly_avg_dynamic.rename(columns={'timestamp': 'month'}, inplace=True)
+    print("预计算完成。")
+
+    # 提前获取模型特征列名
+    try:
+        cls_feature_cols = MODELS['presence_classifier'].feature_name_
+        richness_feature_cols = MODELS['richness_regressor'].feature_name_
+        abundance_feature_cols = MODELS['abundance_regressor'].feature_name_
+        shannon_feature_cols = MODELS['shannon_regressor'].feature_name_
+    except Exception as e:
+        raise Exception(f"加载模型或获取特征名时出错: {e}")
+
+    # 用于存储最终结果
+    all_results = {grid_id: [] for grid_id in history_df['Grid_ID'].unique()}
+
+    # 预测循环依赖于前一个月的预测结果，所以需要动态更新历史
+    current_history = history_df.copy()
 
     for target_date in target_dates:
         print(f"--- 正在预测月份: {target_date.strftime('%Y-%m')} ---")
 
-        # 准备一个包含所有 Grid 当月预测输入的 DataFrame
-        current_month_input_df = pd.DataFrame(columns=model_feature_cols)
+        # --- 步骤 1: 批量创建所有网格的基线特征行 ---
+        target_month = target_date.month
 
-        for grid_id in all_grid_ids:
-            # a. 获取历史上下文
-            history_context = history_df[
-                (history_df['Grid_ID'] == grid_id) &
-                (history_df['timestamp'] < target_date)
-                ].tail(12)
+        future_dynamic_features = monthly_avg_dynamic[monthly_avg_dynamic['month'] == target_month]
+        baseline_features = pd.merge(latest_static_features, future_dynamic_features, on='Grid_ID', how='left')
+        baseline_features[dynamic_cols] = baseline_features[dynamic_cols].fillna(0)
 
-            if history_context.empty:
-                continue  # 如果一个网格完全没有历史，则跳过
+        baseline_features['timestamp'] = target_date
+        baseline_features['month_sin'] = np.sin(2 * np.pi * (target_month - 1) / 12)
+        baseline_features['month_cos'] = np.cos(2 * np.pi * (target_month - 1) / 12)
+        print(f"    为 {len(baseline_features)} 个网格批量创建了基线行。")
 
-            # b. 构建基线
-            baseline_row = _create_baseline_row(grid_id, target_date, history_df)
+        # --- 步骤 2: 批量重新计算时空特征 ---
+        history_context = current_history.groupby('Grid_ID').tail(12)
+        df_for_recalc = pd.concat([history_context, baseline_features], ignore_index=True)
 
-            # c. 临时拼接并重新计算特征
-            temp_df = pd.concat([history_context, baseline_row], ignore_index=True)
-            final_feature_row = _recalculate_temporal_features(temp_df)
+        print("    开始批量重新计算时空特征...")
+        recalculated_df = _recalculate_temporal_features_batch(df_for_recalc)
+        print("    批量计算完成。")
 
-            # d. 生成 presence_prob
-            X_cls = final_feature_row.drop(columns=leaky_features_for_classifier, errors='ignore')[
-                MODELS['presence_classifier'].feature_name_]
-            presence_prob = MODELS['presence_classifier'].predict_proba(X_cls)[:, 1][0]
+        final_feature_rows = recalculated_df[recalculated_df['timestamp'] == target_date].copy()
+        final_feature_rows.dropna(how='all', inplace=True)
 
-            # e. 存储并组合最终特征向量
-            final_feature_row['presence_prob'] = presence_prob
+        if final_feature_rows.empty:
+            print(f"    在 {target_date.strftime('%Y-%m')} 没有可预测的数据行。")
+            continue
 
-            # 确保列的顺序和数量与模型训练时完全一致
-            current_month_input_df = pd.concat([current_month_input_df, final_feature_row[model_feature_cols]],
-                                               ignore_index=True)
+        # --- 步骤 3: 批量预测 ---
+        print("    开始批量预测...")
+        X_cls = final_feature_rows[cls_feature_cols]
+        presence_preds = MODELS['presence_classifier'].predict(X_cls)
+        presence_probs = MODELS['presence_classifier'].predict_proba(X_cls)[:, 1]
 
-        # f. 批量预测（对当月所有网格）
-        if not current_month_input_df.empty:
-            pred_richness = MODELS['richness_regressor'].predict(current_month_input_df)
-            pred_abundance = MODELS['abundance_regressor'].predict(current_month_input_df)
-            pred_shannon = MODELS['shannon_regressor'].predict(current_month_input_df)
+        final_feature_rows['presence_prob'] = presence_probs
+        # --- 关键修改：为预测结果创建 has_richness 列 ---
+        final_feature_rows['has_richness'] = presence_preds
 
-            # 将预测结果合并回 DataFrame 以便查询
-            current_month_input_df['pred_richness'] = np.maximum(0, pred_richness)
-            current_month_input_df['pred_abundance'] = np.maximum(0, pred_abundance)
-            current_month_input_df['pred_shannon'] = np.maximum(0, pred_shannon)
+        pred_richness = MODELS['richness_regressor'].predict(final_feature_rows[richness_feature_cols])
+        pred_abundance = MODELS['abundance_regressor'].predict(final_feature_rows[abundance_feature_cols])
+        pred_shannon = MODELS['shannon_regressor'].predict(final_feature_rows[shannon_feature_cols])
+        print("    批量预测完成。")
 
-            # 3. 计算综合指标并存入结果
-            for idx, row in current_month_input_df.iterrows():
-                grid_id = int(row['Grid_ID'])
-                composite_index = _calculate_composite_index(
-                    row['pred_richness'], row['pred_abundance'], row['pred_shannon']
-                )
-                all_results[grid_id].append({
-                    "timestamp": target_date.strftime('%Y-%m-%d'),
-                    "predicted_composite_index": composite_index
-                })
+        # --- 步骤 4: 整理结果并更新历史 ---
+        final_feature_rows['richness'] = np.maximum(0, pred_richness)
+        final_feature_rows['abundance'] = np.maximum(0, pred_abundance)
+        final_feature_rows['shannon'] = np.maximum(0, pred_shannon)
 
-    # 4. 格式化最终输出
+        # 如果预测 richness 为 0，确保 has_richness 也为 0 (逻辑校正)
+        final_feature_rows.loc[final_feature_rows['richness'] == 0, 'has_richness'] = 0
+
+        for _, row in final_feature_rows.iterrows():
+            grid_id = int(row['Grid_ID'])
+            richness = float(row['richness'])
+            abundance = float(row['abundance'])
+            shannon = float(row['shannon'])
+
+            result = {
+                'date': target_date.strftime('%Y-%m-%d'),
+                'richness': richness,
+                'abundance': abundance,
+                'shannon': shannon,
+                'composite_index': _calculate_composite_index(richness, abundance, shannon)
+            }
+            if grid_id in all_results:
+                all_results[grid_id].append(result)
+
+        # 更新 current_history，现在列结构完全一致
+        cols_to_keep_for_history = [col for col in current_history.columns if col in final_feature_rows.columns]
+        current_history = pd.concat([current_history, final_feature_rows[cols_to_keep_for_history]], ignore_index=True)
+        print(f"    结果已整理，历史记录已更新。")
+
+    # --- 步骤 5: 返回最终结果 ---
     final_output = [
         {"grid_id": grid_id, "predictions": preds}
         for grid_id, preds in all_results.items() if preds
     ]
-
     return final_output

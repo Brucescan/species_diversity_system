@@ -145,7 +145,7 @@ class PredictFutureBaselineView(APIView):
             # 2. 确定预测时间范围
             start_date = pd.to_datetime(start_month_str)
             # freq='M' 表示每月的最后一天
-            target_dates = pd.date_range(start=start_date, periods=num_months, freq='M')
+            target_dates = pd.date_range(start=start_date, periods=num_months, freq='ME')
 
             # 3. 调用核心预测服务
             prediction_results = perform_prediction(target_dates)
