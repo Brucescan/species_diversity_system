@@ -1,6 +1,8 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 
+from user_api.models import UserProfile
+
 User = get_user_model()
 
 class UserSerializer(serializers.ModelSerializer):
@@ -16,4 +18,17 @@ class UserSerializer(serializers.ModelSerializer):
             password=validated_data['password'],
             email=validated_data.get('email', '')
         )
-        return user # 根据需要添加其他字段
+        return user
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source='user.username', read_only=True)
+    email = serializers.EmailField(source='user.email', read_only=True)
+
+    class Meta:
+        model = UserProfile
+        fields = (
+            'id', 'username', 'email', 'openid', 'unionid',
+            'nickname', 'avatar_url', 'gender'
+        )
+        read_only_fields = ('id', 'openid', 'unionid', 'session_key')
+        ref_name = 'UserProfile' # 防止和UserSerializer的ref_name冲突

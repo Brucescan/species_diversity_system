@@ -5,9 +5,7 @@ from multiprocessing import Process, Queue
 import os
 import schedule
 
-# 强制设置工作目录为 data_pipeline/
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
-
 from fetch_aqi import FetchAQI
 from fetch_bird import FetchBird
 from save_to_database import consumer
@@ -15,15 +13,13 @@ from save_to_database import consumer
 
 
 def run_update_script(script_name):
-    """Executes a python script in a subprocess."""
     print(f"运行更新脚本{script_name}")
     try:
-        # Use sys.executable to ensure using the same python environment
         result = subprocess.run(
             [sys.executable, script_name],
-            check=True,  # Raise exception if script returns non-zero exit code
-            capture_output=True,  # Capture stdout and stderr
-            text=True,  # 解码输出文本
+            check=True,
+            capture_output=True,
+            text=True,
             encoding='utf-8',
             errors='replace',
         )
@@ -31,7 +27,7 @@ def run_update_script(script_name):
         if result.stdout:
             print("Output:\n", result.stdout)
         if result.stderr:
-            print("Error Output:\n", result.stderr)  # Should be empty if check=True and no error
+            print("Error Output:\n", result.stderr)
     except FileNotFoundError:
         print(f"Error: Script '{script_name}' not found in {os.getcwd()}")
     except subprocess.CalledProcessError as e:
@@ -73,22 +69,18 @@ if __name__ == '__main__':
     print("Phase 1: 初始化数据抓取成功并且保存到数据库中.")
     print("-" * 30)
 
-    # Schedule the jobs
     schedule.every().hour.do(run_update_script,"update_aqi.py").tag('aqi-update')
-    # Example: Run daily at 2:30 AM. Adjust time as needed.
     schedule.every().day.at("02:30").do(run_update_script,"update_bird.py").tag('bird-update')
 
-    # Print upcoming jobs
     print("Scheduled jobs:")
     for job in schedule.get_jobs():
         print(f"- {job}")
 
-    # Run the scheduler loop
     print("Phase 2: 周期运行中. 等待调度工作...")
     print("-" * 30)
     while True:
         schedule.run_pending()
-        time.sleep(60)  # Check every 60 seconds if a job is due
+        time.sleep(60)
 
 
     

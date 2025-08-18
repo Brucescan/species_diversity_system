@@ -1,12 +1,11 @@
 import arcpy
 import arcpy.sa
 import os
-import traceback  # 引入traceback用于更详细的错误输出
+import traceback
 
 
 def calculate_land_cover_percentage_in_fishnet(input_fishnet_fc, input_land_cover_raster, output_fc_name):
     try:
-        # --- 环境设置 ---
         arcpy.env.overwriteOutput = True
 
         actual_fishnet_path = input_fishnet_fc.dataSource if hasattr(input_fishnet_fc,
@@ -14,7 +13,6 @@ def calculate_land_cover_percentage_in_fishnet(input_fishnet_fc, input_land_cove
         actual_land_cover_path = input_land_cover_raster.dataSource if hasattr(input_land_cover_raster,
                                                                                'dataSource') else input_land_cover_raster
 
-        # --- 坐标系检查 ---
         arcpy.AddMessage("正在检查输入数据的坐标系...")
         sr_vector = arcpy.Describe(actual_fishnet_path).spatialReference
         sr_raster = arcpy.Describe(actual_land_cover_path).spatialReference
@@ -28,10 +26,6 @@ def calculate_land_cover_percentage_in_fishnet(input_fishnet_fc, input_land_cove
         arcpy.env.workspace = output_workspace
         arcpy.AddMessage(f"输出工作空间设置为: {output_workspace}")
 
-        if arcpy.CheckExtension("Spatial") != "Available":
-            arcpy.AddError("Spatial Analyst 扩展不可用。")
-            return
-        arcpy.CheckOutExtension("Spatial")
 
         output_fishnet_fc = os.path.join(output_workspace, output_fc_name)
         temp_tabulate_table = os.path.join(arcpy.env.scratchGDB, "temp_landcover_tabulation")
@@ -41,11 +35,8 @@ def calculate_land_cover_percentage_in_fishnet(input_fishnet_fc, input_land_cove
             8: "BareGround", 9: "Snow", 10: "Cloud", 11: "Pasture"
         }
 
-        arcpy.AddMessage("步骤 1/6: 复制渔网特征类...")
         arcpy.CopyFeatures_management(actual_fishnet_path, output_fishnet_fc)
 
-        # --- 已修正的步骤 2/6 ---
-        arcpy.AddMessage("步骤 2/6: 计算每个渔网单元的总面积...")
         fields_before = {f.name for f in arcpy.ListFields(output_fishnet_fc)}
         arcpy.AddGeometryAttributes_management(output_fishnet_fc, "AREA_GEODESIC", "", "SQUARE_METERS")
         fields_after = {f.name for f in arcpy.ListFields(output_fishnet_fc)}
@@ -64,15 +55,10 @@ def calculate_land_cover_percentage_in_fishnet(input_fishnet_fc, input_land_cove
                 arcpy.AddError("致命错误: 运行 AddGeometryAttributes 后未能找到任何面积字段。")
                 return
 
-        # --- 后续步骤 ---
-        arcpy.AddMessage("步骤 3/6: 统计渔网单元内的土地利用面积...")
-        # 让工具自动使用输入栅格的像元大小
         arcpy.sa.TabulateArea(output_fishnet_fc, "OBJECTID", actual_land_cover_path, "Value", temp_tabulate_table)
         arcpy.AddMessage(f"临时统计表已创建: {temp_tabulate_table}")
 
-        arcpy.AddMessage("步骤 4/6: 处理统计结果...")
         fishnet_lc_areas = {}
-        # TabulateArea 输出的字段名是 VALUE_1, VALUE_2 等
         with arcpy.da.SearchCursor(temp_tabulate_table, "*") as cursor:
             field_names = cursor.fields
             zone_id_field_index = field_names.index("OBJECTID")
@@ -88,14 +74,12 @@ def calculate_land_cover_percentage_in_fishnet(input_fishnet_fc, input_land_cove
                         except (ValueError, IndexError):
                             continue  # 忽略无法解析的字段
 
-        arcpy.AddMessage("步骤 5/6: 添加土地利用百分比字段...")
         fields_to_update = ["OID@", area_field_name]
         for lc_name in land_cover_types.values():
             percent_field_name = f"{lc_name}_Pct"
             arcpy.AddField_management(output_fishnet_fc, percent_field_name, "DOUBLE", 10, 5)
             fields_to_update.append(percent_field_name)
 
-        arcpy.AddMessage("步骤 6/6: 计算并更新土地利用百分比...")
         with arcpy.da.UpdateCursor(output_fishnet_fc, fields_to_update) as cursor:
             for row in cursor:
                 current_oid, total_zone_area = row[0], row[1]
@@ -132,11 +116,8 @@ def calculate_land_cover_percentage_in_fishnet(input_fishnet_fc, input_land_cove
 
 if __name__ == '__main__':
     try:
-        # !!! 在运行前，请确保已将SDE数据导出到本地，并使用本地副本的名称 !!!
-        # 渔网数据 (本地矢量副本)
         fishnet_layer_name_in_map = "Analysis_grid_20240101_to_20241231"  # <-- 使用你导出的本地副本的图层名称
 
-        # 土地利用数据 (栅格)
         land_cover_raster_name_in_map = "ls_merge_Clip1"
 
         output_feature_class_name = "Fishnet_LandCover_Percentages_Final"

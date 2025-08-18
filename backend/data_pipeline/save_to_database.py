@@ -6,10 +6,8 @@ import os
 from django.contrib.gis.geos import Point
 from datetime import datetime
 
-# 将项目根目录添加到Python路径
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(BASE_DIR)
-# 设置 Django 环境变量
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.settings')
 django.setup()
 from data_pipeline.models import BirdObservation, BirdSpeciesRecord, AQIStation, AQIRecord
@@ -46,7 +44,6 @@ def consumer(queue):
         data_type = resp["type"]
         data = resp["data"]
 
-        # try:
         if data_type == "bird":
             process_bird_data(data, buffers)
         elif data_type == "AQI":
@@ -55,9 +52,6 @@ def consumer(queue):
         # 检查批量插入
         check_batch_insert(buffers, BATCH_SIZE, station_cache)
 
-        # except Exception as e:
-        #     print(f"处理{data_type}数据时出错: {e}")
-        #     continue
 
     print("消费者进程正常结束")
 
@@ -69,12 +63,10 @@ def process_remaining_data(buffers, station_cache):
         if buffers["bird_observations"]:
             BirdObservation.objects.bulk_create(buffers["bird_observations"])
             print(f"插入最后一批鸟类观测数据，共{len(buffers['bird_observations'])}条")
-
         # 处理剩余的鸟类物种数据
         if buffers["bird_species"]:
             BirdSpeciesRecord.objects.bulk_create(buffers["bird_species"])
             print(f"插入最后一批鸟类物种数据，共{len(buffers['bird_species'])}条")
-
         # 处理剩余的AQI数据
         if buffers["aqi"]:
             AQIRecord.objects.bulk_create(buffers["aqi"])
@@ -94,11 +86,10 @@ def process_bird_data(raw_data, buffers):
         raw_data=raw_data
     )
     buffers["bird_observations"].append(observation)
-
     # 准备物种记录数据
     for species in raw_data['species']:
         species_record = BirdSpeciesRecord(
-            observation=observation,  # 注意：这里需要先保存observation才能使用
+            observation=observation,
             taxon_id=species['taxon_id'],
             taxon_name=species['taxon_name'],
             latin_name=species['latinname'],

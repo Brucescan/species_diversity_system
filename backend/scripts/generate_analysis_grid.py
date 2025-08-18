@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import arcpy
 import math
 import os
@@ -7,9 +6,7 @@ import traceback
 from collections import defaultdict
 
 
-# ======================================================================================
-# --- create_analysis_grid 函数 (已将f-string替换为 .format()) ---
-# ======================================================================================
+
 def create_analysis_grid(output_grid_fc, template_fc, grid_cell_size):
     """根据模板要素的范围创建渔网。"""
     arcpy.AddMessage("  正在创建渔网...")
@@ -37,30 +34,21 @@ def create_analysis_grid(output_grid_fc, template_fc, grid_cell_size):
     arcpy.AddMessage("  添加并计算 'Grid_ID' 字段...")
     arcpy.AddField_management(output_grid_fc, "Grid_ID", "LONG")
 
-    # --- 这段代码未使用f-string，保持不变 ---
     oid_field_name = arcpy.Describe(output_grid_fc).OIDFieldName
     expression = "!" + oid_field_name + "!"
     arcpy.CalculateField_management(output_grid_fc, "Grid_ID", expression, "PYTHON3")
     arcpy.AddMessage("  'Grid_ID' 字段计算完成。")
 
 
-# ======================================================================================
-# --- process_aqi_data 函数 (已将f-string替换为 .format()) ---
-# ======================================================================================
+
 def process_aqi_data(grid_fc, start_date, end_date, db_connection_sde, pollutants_list, aqi_record_table,
                      aqi_station_table, grid_cell_size, target_projected_crs):
-    """
-    从数据库提取空气质量数据，进行插值分析，并将结果连接到网格。
-    此版本修复了插值范围及snapRaster参数类型错误的问题。
-    """
-    arcpy.AddMessage("  1. 从数据库提取并处理空气质量数据...")
     # 视图名称
     view_name = "public.v_station_daily_averages"
 
-    # 构建所有污染物的AVG()表达式，注意字段名和视图中一致
     avg_expressions = ", ".join(["AVG({}) AS avg_{}".format(p, p) for p in pollutants_list])
 
-    # 最终的SQL查询
+    # SQL查询
     query_sql = """
         SELECT
             station_id,
@@ -152,7 +140,6 @@ def process_aqi_data(grid_fc, start_date, end_date, db_connection_sde, pollutant
         if arcpy.Exists(raster_path): arcpy.Delete_management(raster_path)
         if arcpy.Exists(stats_table): arcpy.Delete_management(stats_table)
 
-        arcpy.AddMessage("    正在将处理范围设置为整个分析网格...")
         with arcpy.EnvManager(
                 extent=grid_fc,
                 snapRaster=template_raster,
@@ -183,14 +170,8 @@ def process_aqi_data(grid_fc, start_date, end_date, db_connection_sde, pollutant
     arcpy.AddMessage("\n  AQI处理完成，临时文件已清理。")
 
 
-# ======================================================================================
-# --- calculate_bird_diversity_optimized 函数 (已将f-string替换为 .format()) ---
-# ======================================================================================
 def calculate_bird_diversity_optimized(grid_fc, start_date, end_date, db_connection_sde, bird_observation_table,
                                        bird_species_table):
-    """
-    为每个网格计算鸟类多样性指数 (最终修复版，采用手动分步物化)。
-    """
     arcpy.AddMessage("  使用“手动分步物化”策略计算鸟类多样性...")
     workspace = arcpy.env.workspace
     target_crs_gcs = arcpy.SpatialReference(4326)
@@ -333,7 +314,6 @@ def calculate_bird_diversity_optimized(grid_fc, start_date, end_date, db_connect
                 if obs_id and species_name and count_val is not None:
                     obs_to_species_data[obs_id].append((species_name, count_val))
 
-    arcpy.AddMessage("  物种数据批量查询完成，数据已读入内存。")
 
     arcpy.AddMessage("  正在内存中计算多样性指数...")
     results_dict = {}
@@ -383,9 +363,6 @@ def calculate_bird_diversity_optimized(grid_fc, start_date, end_date, db_connect
     arcpy.AddMessage("  鸟类多样性数据合并完成。")
 
 
-# ======================================================================================
-# --- main 函数 (已将f-string替换为 .format()) ---
-# ======================================================================================
 def main():
     """主执行函数，包含完整的错误处理和资源管理。"""
 

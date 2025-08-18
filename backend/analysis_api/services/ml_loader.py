@@ -47,11 +47,10 @@ def load_and_process_historical_data():
 
     print("开始加载和处理历史数据...")
 
-    # --- 1. 数据加载 ---
-    base_path = r"D:\训练数据\最终数据"
+    # 数据加载
+    base_path = r"./历史数据"
     all_data_frames = []
 
-    # 假设现在 2020-2025 的数据都是标准的
     for year in range(2020, 2026):
         year_path = os.path.join(base_path, str(year), f"processed_data_{year}.gdb")
         if not os.path.exists(year_path):
@@ -75,11 +74,9 @@ def load_and_process_historical_data():
 
     full_gdf = pd.concat(all_data_frames, ignore_index=True)
 
-    # --- 关键修改：始终创建 has_richness 列 ---
     if 'richness' in full_gdf.columns:
         full_gdf['has_richness'] = (full_gdf['richness'] > 0).astype(int)
         print("'has_richness' 列已成功创建。")
-    # ----------------------------------------------
 
     if full_gdf.duplicated(subset=['Grid_ID', 'timestamp']).any():
         print("警告: 发现重复的 (Grid_ID, timestamp) 组合。正在删除...")
@@ -87,7 +84,7 @@ def load_and_process_historical_data():
 
     print("所有GDB数据已合并。开始特征工程...")
 
-    # --- 2. 特征工程 ---
+    #特征工程
     df_for_xarray = full_gdf.copy().drop(columns=[full_gdf.geometry.name])
     df_for_xarray = df_for_xarray.set_index(['Grid_ID', 'timestamp'])
     ds = df_for_xarray.to_xarray()
@@ -168,7 +165,7 @@ def load_and_process_historical_data():
 
     print("特征工程完成。")
 
-    # --- 3. 存储最终结果 ---
+    #存储最终结果
     final_df = ds.to_dataframe().reset_index()
 
     print("正在将地理信息合并回最终数据集...")
@@ -181,7 +178,6 @@ def load_and_process_historical_data():
 
 
 def load_all_resources():
-    """一个主函数，用于在服务器启动时调用所有加载和处理函数。"""
     print("Django 应用启动，开始加载ML资源...")
     load_ml_models()
     load_and_process_historical_data()

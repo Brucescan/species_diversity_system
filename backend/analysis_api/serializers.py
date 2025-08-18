@@ -6,7 +6,6 @@ from rest_framework import serializers
 class SpearmanAnalysisSerializer(serializers.Serializer):
     """
     用于验证Spearman相关性分析请求参数的序列化器。
-    该版本明确区分了数据源路径和图层名称。
     """
     gdb_path = serializers.CharField(
         required=True,
@@ -27,9 +26,6 @@ class SpearmanAnalysisSerializer(serializers.Serializer):
     )
 
     def validate_fields(self, value):
-        """
-        自定义验证，确保字段至少有两个，因为相关性分析至少需要两个变量。
-        """
         field_list = value.split(';')
         if len(field_list) < 2:
             raise serializers.ValidationError("分析字段至少需要两个。")

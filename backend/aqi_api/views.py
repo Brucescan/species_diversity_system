@@ -14,10 +14,6 @@ from rest_framework.permissions import AllowAny
 class GetStationListView(APIView):
     """
     获取所有监测站最新空气质量数据的API
-    返回数据包含:
-    - 监测站名称
-    - 位置坐标
-    - 最新AQI数据
     """
     # authentication_classes = [TokenAuthentication]
     permission_classes = [AllowAny]
@@ -82,55 +78,44 @@ class StationHourlyDataAPIView(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        # 1. 找到该站点的最新一条记录
+        # 找到该站点的最新一条记录
         latest_record = AQIRecord.objects.filter(station=station).order_by('-timestamp').first()
 
         if not latest_record:
             # 如果该站点没有任何记录
             return Response(
                 {'code': 201, 'data': []},
-                status=status.HTTP_200_OK  # 通常用200表示成功获取，即使数据为空
-                # 如果坚持用201，也可以，但语义上201更偏向“创建成功”
+                status=status.HTTP_200_OK
             )
 
-        # 2. 以最新记录的时间为基准，计算24小时前的时间点
+        # 以最新记录的时间为基准，计算24小时前的时间点
         latest_timestamp = latest_record.timestamp
         start_time = latest_timestamp - timedelta(hours=24)
 
-        # 3. 查询这个时间窗口内的数据
+        #查询这个时间窗口内的数据
         records_queryset = AQIRecord.objects.filter(
             station=station,
             timestamp__gte=start_time,
             timestamp__lte=latest_timestamp
         ).order_by('-timestamp')
 
-        # 4. 使用序列化器处理数据
+        # 使用序列化器处理数据
         serializer = AQIRecordSerializer(records_queryset, many=True)
 
         return Response(
             {'code': 201, 'data': serializer.data},
-            status=status.HTTP_200_OK  # 同上，一般用200 OK
+            status=status.HTTP_200_OK
         )
 
 
 class AQIRecordByTimeView(generics.ListAPIView):
-    """
-    一个只读的 API 端点，用于根据指定日期获取空气质量记录。
-    使用方法: GET /api/aqi-records/?date=YYYY-MM-DD
-    """
-    # 指定使用你的 serializer
+
     serializer_class = AQIRecordSerializer
     permission_classes = [AllowAny]
 
     def get_queryset(self):
-        """
-        重写此方法以根据 URL 中的 'date' 参数过滤查询集。
-        1. 查找所有在指定时间点或之前的记录。
-        2. 对于每个监测站(station_id)，只返回最新的一条记录。
-        """
         queryset = AQIRecord.objects.all()
 
-        # 从请求参数中获取 'date'
         time_str = self.request.query_params.get('date', None)
 
         if not time_str:

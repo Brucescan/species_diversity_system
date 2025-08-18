@@ -11,10 +11,8 @@ class BirdObservation(models.Model):
     taxon_count = models.IntegerField(verbose_name="物种总数")
     serial_id = models.CharField(max_length=50, unique=False, verbose_name="记录编号")
 
-    # 空间字段（使用GeoDjango）
     location = gis_models.PointField(verbose_name="坐标点")
 
-    # 原始数据备份（可选）
     raw_data = JSONField(null=True, blank=True, verbose_name="原始数据")
 
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="创建时间")
@@ -33,9 +31,6 @@ class BirdObservation(models.Model):
 
 
 class BirdSpeciesRecord(models.Model):
-    """
-    观测到的鸟类物种详情
-    """
     observation = models.ForeignKey(
         BirdObservation,
         on_delete=models.CASCADE,

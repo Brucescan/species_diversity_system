@@ -112,16 +112,9 @@ class UpDateAQI:
         try:
             # 解析数据
             station_name = station_data['stationName']
-            # 1. 从原始 timestamp (毫秒) 计算秒数
             unix_timestamp_sec = int(station_data['timeStamp']) / 1000
-
-            # 2. 使用 utcfromtimestamp 创建一个代表 UTC 时间的 naive datetime 对象
             naive_utc_dt = datetime.utcfromtimestamp(unix_timestamp_sec)
-
-            # 3. 使用 timezone.make_aware 将其转换为带 UTC 时区的 aware datetime 对象
             aware_utc_dt = timezone.make_aware(naive_utc_dt, timezone.utc)
-
-            # 将转换后的 aware 对象赋值给 timestamp 变量
             timestamp = aware_utc_dt
             # 检查是否已存在
             if not AQIRecord.objects.filter(

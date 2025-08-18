@@ -1,7 +1,3 @@
-"""
-@description 获取鸟类数据
-@auther brucescan
-"""
 import random
 import requests
 import execjs
@@ -69,11 +65,11 @@ class FetchBird:
         :return: 总数据
         """
         page_count = self.get_page_count()
-        print(f"总共有{page_count}条数据========================================")
+        print(f"总共有{page_count}页数据========================================")
         # 因为数据量太大，所以先写死
         # page_count = 1000
         bird_data = []
-        for i in range(50):
+        for i in range(page_count):
             jiami_data = {
                 "data": f"page={i + 1}&limit=50&sortBy=startTime&orderBy=desc",
             }

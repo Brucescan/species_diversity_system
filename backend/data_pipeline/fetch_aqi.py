@@ -1,7 +1,3 @@
-"""
-@description 获取实时空气质量
-@auther brucescan
-"""
 import requests
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -47,13 +43,11 @@ class FetchAQI:
         history_params = {
             "stationCode": station_code,
         }
-        # print(history_params)
         history_resp = requests.post("https://air.cnemc.cn:18007/HourChangesPublish/GetAqiHistoryByCondition",
                                      headers=self.headers, params=history_params)
         return history_resp.text
 
     def process_data(self, all_data,queue):
-        # processed_data = []
         for station in all_data:
             for one_time in eval(station):
                 one_data = {}

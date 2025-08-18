@@ -9,7 +9,7 @@ import ast
 from ddddocr import DdddOcr
 from datetime import datetime, date
 from django.db import transaction
-from django.contrib.gis.geos import Point  # 正确的导入方式
+from django.contrib.gis.geos import Point
 
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.settings')
@@ -26,10 +26,6 @@ class UpDateBird:
         self.js = execjs.compile(js_code)
 
     def get_all_data(self):
-        """
-        获取数据的主函数
-        :return: 总数据
-        """
         page_count = 1
         bird_data = []
         for i in range(page_count):
@@ -84,11 +80,6 @@ class UpDateBird:
         return self.process_bird_data(bird_data)
 
     def get_get_details(self, reportId_data):
-        """
-        获取一个观测的详细信息
-        :param reportId_data:
-        :return:一个报告中详细的信息，包括地点等
-        """
         details = {}
         params_resp = self.js.call("encryptHeaders", {"data": reportId_data})
         url = "https://api.birdreport.cn/front/activity/get"
@@ -283,18 +274,14 @@ class UpDateBird:
                     BirdSpeciesRecord.objects.bulk_create(species_to_create)
 
                 print(f"成功保存观测记录: {observation.id}")
+                return None
+            return None
 
         except Exception as e:
             print(f"保存数据失败: {e}")
             return None
 
     def is_beijing_today_data(self,report:dict):
-        """
-        判断数据是否是今天北京的观测数据
-        :param report: 单条观测数据字典
-        :return: (is_beijing, is_today) 元组
-        """
-        # 检查北京数据
         is_beijing = report.get("address", "").startswith("北京市")
 
         # 检查今天数据

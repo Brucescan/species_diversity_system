@@ -4,6 +4,10 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile
+    command: >
+      sh -c "python manage.py makemigrations && 
+             python manage.py migrate && 
+             python manage.py runserver 0.0.0.0:8000"
     ports:
       - "8000:8000"
     environment:
@@ -14,12 +18,38 @@ services:
       - POSTGRES_PORT=5432
       - GDAL_LIBRARY_PATH=/usr/lib/libgdal.so
       - GEOS_LIBRARY_PATH=/usr/lib/libgeos_c.so
-      - PYTHONUNBUFFERED=1  # <--- 就加这一行
+      - PYTHONUNBUFFERED=1
     depends_on:
       database:
         condition: service_healthy
     networks:
       - app-network
+
+  pipeline:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    # 启动命令，只负责运行数据管道
+    command: >
+      sh -c "echo 'Waiting for database...' && 
+             sleep 10 && 
+             python data_pipeline/run_pipeline.py"
+    environment:
+      - POSTGRES_DB=mydb
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=123456
+      - POSTGRES_HOST=database
+      - POSTGRES_PORT=5432
+      - GDAL_LIBRARY_PATH=/usr/lib/libgdal.so
+      - GEOS_LIBRARY_PATH=/usr/lib/libgeos_c.so
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      database:
+        condition: service_healthy
+    networks:
+      - app-network
+    # 如果管道失败了，可以配置自动重启
+    restart: on-failure
 
   database:
     image: postgis/postgis:16-3.4

@@ -21,10 +21,6 @@ def print_fields(fc_path, step_name):
 
 
 def merge_and_enrich_monthly_data(year_to_process):
-    """
-    最终修正版v12: 修复因字段名大小写不匹配导致的 'EVI' not in list 错误。
-    统一在代码中使用小写的 'evi' 作为字段名。
-    """
     try:
         if arcpy.CheckExtension("Spatial") == "Available":
             arcpy.CheckOutExtension("Spatial")
@@ -85,7 +81,6 @@ def merge_and_enrich_monthly_data(year_to_process):
             continue
 
         try:
-            # 1 & 2. 准备数据并添加栅格属性
             arcpy.AddMessage("1 & 2. 准备数据并添加栅格属性...")
             base_polygons_in_mem = "in_memory/base_polygons"
             arcpy.CopyFeatures_management(base_fc_path, base_polygons_in_mem)
@@ -110,7 +105,6 @@ def merge_and_enrich_monthly_data(year_to_process):
             arcpy.JoinField_management(base_polygons_in_mem, "OBJECTID", temp_centroids, "ORIG_FID",
                                        fields_from_rasters)
 
-            # 3. 链式添加矢量属性并清理字段
             arcpy.AddMessage("3. 链式添加矢量属性并清理字段...")
             field_mappings_lulc = arcpy.FieldMappings()
             field_mappings_lulc.addTable(base_polygons_in_mem)
@@ -129,7 +123,6 @@ def merge_and_enrich_monthly_data(year_to_process):
                                     '_1')]
             if fields_to_delete: arcpy.DeleteField_management(final_enriched_fc, fields_to_delete)
 
-            # 4. 检查并填充第一行的NULL值
             arcpy.AddMessage(f"4. 检查并填充第一行的NULL值...")
             final_fields_obj = arcpy.ListFields(final_enriched_fc)
             oid_field_name = arcpy.Describe(final_enriched_fc).OIDFieldName
@@ -161,7 +154,6 @@ def merge_and_enrich_monthly_data(year_to_process):
             else:
                 arcpy.AddMessage("   第一行数据有效或第二行数据不可用，无需填充。")
 
-            # 5. 保存最终结果
             arcpy.AddMessage(f"5. 保存最终要素类...")
             arcpy.CopyFeatures_management(final_enriched_fc, final_output_fc_path)
             arcpy.AddMessage(f"已成功处理并保存: {final_output_fc_name}")
